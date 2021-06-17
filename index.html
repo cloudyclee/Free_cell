@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./dist/style.css">
+    <title>Free Cell</title>
+
+</head>
+
+<body>
+    <div class="container" id="app">
+        <div class="top">
+            <div class="tempSpace">
+                <div class="temp" v-for="index in tempNum" :key="index" :ref="setTempRef" @drop="dropped($event)"
+                    @dragenter="cancelDefault($event)" @dragover="cancelDefault($event)"></div>
+            </div>
+            <div class="logo">
+                <img src="./F2E_W2_material/material/king_happy.png" alt="">
+                <br>
+                FREECELL
+            </div>
+            <div class="finalSpace">
+                <div class="final" :class="[Object.values(suit)[index-1]]" v-for="index in finalNum" :key="index"
+                    :ref="setFinalRef" @drop="dropped($event)" @dragenter="cancelDefault($event)"
+                    @dragover="cancelDefault($event)"></div>
+            </div>
+        </div>
+        <div class="cardSpace">
+            <div class="col" v-for="item in cardspack" :key="item" :ref="setColRef" @drop="dropped($event)"
+                @dragenter="cancelDefault($event)" @dragover="cancelDefault($event)">
+                <div class="space_card"></div>
+                <div class="card" v-for="c in item" :key="c.cards" :id="c.cards" :data-suit="c.suit"
+                    :data-point="c.point" :style="{backgroundImage: c.img, opacity: opacity}" :ref="setCardRef"
+                    @dragstart="dragStart($event)" @drag="drag($event)" @dragend="dragEnd($event)"
+                    @drop="dropped($event)" @dragenter="cancelDefault($event)" @dragover="cancelDefault($event)"
+                    draggable=true></div>
+            </div>
+        </div>
+        <hr>
+        <div class="info">
+            <div class="stats">
+                <span class="info_space">
+                </span>
+                <span>TIME:</span>
+                <span id="time">{{ minute >= 10? minute : `0${minute}` }}:{{ second >= 10? second : `0${second}`
+                    }}</span>
+                <span>MOVES:</span>
+                <span id="moves">{{ moves }}</span>
+            </div>
+            <div class="functionButton">
+                <div id="newGame" @click="newGameHandler">NEW GAME</div>
+                <div id="restart" @click="restartHandler">RESTART</div>
+                <div id="hint">HINT</div>
+                <div id="undo">UNDO</div>
+            </div>
+        </div>
+        <transition name="fade">
+            <div class="msg" v-if="status.code !== 'inGame' && status.code !== 'init'">
+                <div class="msg_box">
+                    <div class="close" @click="closeHandler">X</div>
+                    <img :src="`./F2E_W2_material/material/king_${status.info.img}.png`" alt="">
+                    <h3>{{ status.info.title }}</h3>
+                    <p>{{ status.info.content }}</p>
+                    <div class="buttons">
+                        <div v-for="(item, index) in status.info.button" :key=index class="button"
+                            @click="item.function">{{ item.content }}</div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+    </div>
+    <script src="https://unpkg.com/vue@next"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script> -->
+    <script type="module" src="./index.js"></script>
+
+</body>
+
+</html>

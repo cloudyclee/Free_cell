@@ -1,0 +1,498 @@
+* {
+  font-family: 'Lato', sans-serif;
+  color: #222222;
+  position: relative;
+}
+
+html, body {
+  padding: 0px;
+  margin: 0px;
+}
+
+.card {
+  position: relative;
+  width: 95px;
+  height: 145px;
+  background: #fcfcfc 0% 0% no-repeat padding-box;
+  border: 0.5px solid #BABABA;
+  border-radius: 5px;
+  position: absolute;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  margin-right: 20px;
+  z-index: 10;
+}
+
+.container {
+  width: 100%;
+  background-color: #E2E2E2;
+  background-repeat: no-repeat;
+  padding: 50px 0px;
+}
+
+.top {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  margin: 0px auto;
+}
+
+.top .tempSpace {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.top .tempSpace .temp {
+  position: relative;
+  width: 95px;
+  height: 145px;
+  background: #fcfcfc 0% 0% no-repeat padding-box;
+  border: 0.5px solid #BABABA;
+  border-radius: 5px;
+  border: 2px solid rgba(252, 252, 252, 0.6);
+  background-color: transparent;
+  margin: 0px 7.5px;
+}
+
+.top .tempSpace .temp .card {
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.top .tempSpace .temp .card::after {
+  content: "";
+  position: absolute;
+  display: block;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #d5d5d5), to(transparent));
+  background-image: linear-gradient(#d5d5d5 20%, transparent);
+  opacity: 0;
+}
+
+.top .tempSpace .temp .card:hover {
+  -webkit-transition: -webkit-transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform 0.3s;
+  transition: transform 0.3s, -webkit-transform 0.3s;
+  -webkit-transform: scale(1.02) translateY(-5px);
+          transform: scale(1.02) translateY(-5px);
+}
+
+.top .tempSpace .temp .card:hover::after {
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
+  opacity: 0.2;
+}
+
+.top .finalSpace {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.top .finalSpace .final {
+  position: relative;
+  width: 95px;
+  height: 145px;
+  background: #fcfcfc 0% 0% no-repeat padding-box;
+  border: 0.5px solid #BABABA;
+  border-radius: 5px;
+  background-color: rgba(252, 252, 252, 0.6);
+  display: inline-block;
+  margin: 0px 7.5px;
+}
+
+.top .finalSpace .final .card {
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.top .finalSpace .final .card::after {
+  content: "";
+  position: absolute;
+  display: block;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #d5d5d5), to(transparent));
+  background-image: linear-gradient(#d5d5d5 20%, transparent);
+  opacity: 0;
+}
+
+.top .finalSpace .final .card:hover {
+  -webkit-transition: -webkit-transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform 0.3s;
+  transition: transform 0.3s, -webkit-transform 0.3s;
+  -webkit-transform: scale(1.02) translateY(-5px);
+          transform: scale(1.02) translateY(-5px);
+}
+
+.top .finalSpace .final .card:hover::after {
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
+  opacity: 0.2;
+}
+
+.top .finalSpace .spade {
+  background-image: url("../F2E_W2_material/material/S.png");
+  background-size: 35px auto;
+  background-position: center center;
+}
+
+.top .finalSpace .heart {
+  background-image: url("../F2E_W2_material/material/H.png");
+  background-size: 35px auto;
+  background-position: center center;
+}
+
+.top .finalSpace .diamond {
+  background-image: url("../F2E_W2_material/material/D.png");
+  background-size: 35px auto;
+  background-position: center center;
+}
+
+.top .finalSpace .club {
+  background-image: url("../F2E_W2_material/material/C.png");
+  background-size: 35px auto;
+  background-position: center center;
+}
+
+.top .logo {
+  width: 95px;
+  text-align: center;
+  font: normal normal 800 14px/17px Lato;
+  letter-spacing: 1.4px;
+  color: #222222;
+  margin: 0px 7.5px;
+}
+
+.top .logo img {
+  width: 51.43px;
+  height: auto;
+  margin-bottom: 5px;
+}
+
+.cardSpace {
+  max-width: 1010px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-pack: distribute;
+      justify-content: space-around;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: start;
+  margin: 0px auto;
+  margin-top: 30px;
+  margin-bottom: 50px;
+  font-size: 0px;
+}
+
+.cardSpace .col .space_card {
+  position: relative;
+  width: 95px;
+  height: 145px;
+  background: #fcfcfc 0% 0% no-repeat padding-box;
+  border: 0.5px solid #BABABA;
+  border-radius: 5px;
+  display: inline-block;
+  background-color: transparent;
+  margin-right: 20px;
+}
+
+.cardSpace .col .card {
+  position: relative;
+  margin-top: -110px;
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.cardSpace .col .card::after {
+  content: "";
+  position: absolute;
+  display: block;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #d5d5d5), to(transparent));
+  background-image: linear-gradient(#d5d5d5 20%, transparent);
+  opacity: 0;
+}
+
+.cardSpace .col .card:hover {
+  -webkit-transition: -webkit-transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform 0.3s;
+  transition: transform 0.3s, -webkit-transform 0.3s;
+  -webkit-transform: scale(1.02) translateY(-5px);
+          transform: scale(1.02) translateY(-5px);
+}
+
+.cardSpace .col .card:hover::after {
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
+  opacity: 0.2;
+}
+
+.cardSpace .col .card:nth-child(1) {
+  margin-top: 0px;
+}
+
+.cardSpace .col .card:nth-child(2) {
+  margin-top: -147px;
+}
+
+.cardSpace .col:nth-child(8) .space_card {
+  margin-right: 0px;
+}
+
+.cardSpace .col:nth-child(8) .card {
+  margin-right: 0px;
+}
+
+hr {
+  max-width: 1000px;
+  border-color: #e2e2e2;
+}
+
+.info {
+  max-width: 1007px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  margin: 50px auto;
+  margin-bottom: 0px;
+}
+
+.info .stats .info_space {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #222222;
+  border-radius: 100%;
+  background-image: url("../F2E_W2_material/material/info.svg");
+  background-size: 20px 20px;
+  background-position: center center;
+  background-repeat: no-repeat;
+  margin-right: 10px;
+}
+
+.info .stats .info_space img {
+  width: 20px;
+  height: auto;
+  line-height: 40px;
+}
+
+.info .stats span {
+  vertical-align: middle;
+  font: normal normal 800 14px/17px Lato;
+  letter-spacing: 1.4px;
+  color: #222222;
+}
+
+.info .stats #time {
+  margin-left: 5px;
+  margin-right: 20px;
+}
+
+.info .stats #moves {
+  margin-left: 5px;
+}
+
+.info .functionButton {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.info .functionButton #newGame, .info .functionButton #restart, .info .functionButton #hint, .info .functionButton #undo {
+  width: 120px;
+  height: 40px;
+  line-height: 40px;
+  border-radius: 50px;
+  text-align: center;
+  background-color: #222222;
+  letter-spacing: 1.2px;
+  color: #fcfcfc;
+  font: normal normal 900 12px/40px Lato;
+  -webkit-transition: 0.1s;
+  transition: 0.1s;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  margin: 0px 7.5px;
+}
+
+.info .functionButton #newGame:hover, .info .functionButton #restart:hover, .info .functionButton #hint:hover, .info .functionButton #undo:hover {
+  background-color: #000;
+}
+
+.info .functionButton #newGame:active, .info .functionButton #restart:active, .info .functionButton #hint:active, .info .functionButton #undo:active {
+  -webkit-transform: translate(3px, 3px);
+          transform: translate(3px, 3px);
+}
+
+.info .functionButton #undo {
+  margin-right: 0px;
+}
+
+.msg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0px;
+  left: 0px;
+  background-color: rgba(34, 34, 34, 0.7);
+  z-index: 20;
+}
+
+.msg .msg_box {
+  position: absolute;
+  width: 600px;
+  height: 330px;
+  top: 25%;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+          transform: translateX(-50%);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  background: #fcfcfc 0% 0% no-repeat padding-box;
+  border-radius: 10px;
+}
+
+.msg .msg_box .close {
+  position: absolute;
+  right: 30px;
+  top: 30px;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  line-height: 20px;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
+.msg .msg_box img {
+  width: 60px;
+  height: auto;
+}
+
+.msg .msg_box h3 {
+  font: normal normal bold 20px/30px Lato;
+  letter-spacing: 2px;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.msg .msg_box p {
+  font: normal normal normal 14px/25px Lato;
+  letter-spacing: 0.7px;
+  color: #333333;
+  margin-top: 0px;
+  margin-bottom: 50px;
+}
+
+.msg .msg_box .buttons .button {
+  width: 120px;
+  height: 40px;
+  line-height: 40px;
+  border-radius: 50px;
+  text-align: center;
+  background-color: #222222;
+  letter-spacing: 1.2px;
+  color: #fcfcfc;
+  font: normal normal 900 12px/40px Lato;
+  -webkit-transition: 0.1s;
+  transition: 0.1s;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  display: inline-block;
+  width: 150px;
+  margin: 0px 7.5px;
+}
+
+.msg .msg_box .buttons .button:hover {
+  background-color: #000;
+}
+
+.msg .msg_box .buttons .button:active {
+  -webkit-transform: translate(3px, 3px);
+          transform: translate(3px, 3px);
+}
+
+.fade-enter-active, .fade-leave-active {
+  -webkit-transition: 1s ease;
+  transition: 1s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to, .fade-leave-from {
+  opacity: 1;
+}
+/*# sourceMappingURL=style.css.map */
