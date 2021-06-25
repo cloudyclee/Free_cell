@@ -1,168 +1,728 @@
-const { ref, reactive, watch, onMounted, onBeforeUpdate, computed } = Vue;
+const {
+	ref,
+	reactive,
+	watch,
+	onMounted,
+	onBeforeUpdate,
+	computed,
+	onBeforeMount,
+} = Vue;
+
+// add array property "last" to get the last item os an array
+Object.defineProperties(Array.prototype, {
+	last: {
+		get() {
+			return this[this.length - 1];
+		},
+	},
+});
 
 const app = {
 	setup() {
-		// status
-		const time = ref(0);
-		const minute = ref(0);
-		const second = ref(0);
-		const moves = ref(0);
-		const index = ref(0);
-		const opacity = ref(0);
+		// 1. Variables to be set and watched
+		// 2. Variables which changes with other varibales change
+		// 3. Other variables which don't have to be watched
+		// 4. Functions which used in other functions
+		// 5. Functionality
+		// 6. Refs and set refs
+		// 7. Computed functions
+		// 8. Watch functions
+		// 9. Lifecycle functions
+
+		// 1. Variables to be set and watched
+
+		// status.code
+		//// init: set by startNewGame, restartCurrentGame
+		//// inGame: set by cardsDistributing, closeHandler
+		//// new: set by newGameHandler
+		//// restart: set by restartHandler
+		//// win: when finalNum changes
+		//// lose: when hintArrayLength = 0
+		// status.info: when status.code changes
 		const status = reactive({
 			code: "init",
 			info: {},
-		}); // win, lose, new, restart
-
-		// refs
-		const tempNum = ref(4);
-		const tempRefs = ref([]);
-		const finalNum = ref(4);
-		const finalRefs = ref([]);
-		const colRefs = ref([]);
-		const cardRefs = ref([]);
-		const cardspack = reactive({
-			col1: [],
-			col2: [],
-			col3: [],
-			col4: [],
-			col5: [],
-			col6: [],
-			col7: [],
-			col8: [],
 		});
+		// set by initCardsPack, elementTransfer
+		const packs = reactive({
+			temp: [[], [], [], []],
+			final: [[], [], [], []],
+			col: [[], [], [], [], [], [], [], []],
+			moving: [],
+		});
+		// set by timer
+		const time = ref(0);
+		// set by cardsDistibuting, dragStart, dragEnd
+		const isTransition = ref(false);
+		// set by dragStart, dragEnd
+		const isDragging = ref(false);
+		// set by startNewGame, restartCurrentGame
+		const isShuffle = ref(true);
+		// set by getMaxLength and recalculate while packs.temp or packs.col changes
+		const maxLength = reactive({ empty: 0, nonEmpty: 0 });
+		// set by getArea
+		const mouseArea = reactive({ pack: "", packIndex: null });
+		// moves: set by elementTransfer
+		// mouse: set by getArea
+		// position: set by dragStart
+		// card: ???
+		const record = reactive({
+			moves: [],
+			mouse: [],
+			position: [],
+			card: null,
+		});
+		// parent: set by checkIsMovable
+		// parentIndex: set by checkIsMovable
+		// indexes: set by checkIsMovable
+		const movingCardsArray = reactive({
+			parent: "",
+			parentIndex: null,
+			indexes: [],
+		});
+		// set by getHintArray
+		const hintArray = ref([]);
+		// set by getHintArray
+		const hintArrayLength = ref(0);
+		// set by getHintArray, hint
+		const hintIndex = ref(0);
 
-		// other variables
-		const suit = { S: "spade", H: "heart", D: "diamond", C: "club" };
-		const shuffleSpeed = 50;
-		let shuffler = null;
-		let timer = null;
-		let cards = [];
-		let cardsShuffle = [];
+		// 2. Variables which changes with other varibales change
 
-		// const dragEventMap = computed(() => {
-		// 	return {
-		// 		dragstart: dragStart($event),
-		// 		drag: drag($event),
-		// 		dragend: dragEnd($event),
-		// 	};
-		// });
-		// const dropEventMap = computed(() => {
-		// 	return {
-		// 		drop: dropped($event),
-		// 		dragenter: cancelDefault($event),
-		// 		dragover: cancelDefault($event),
-		// 	};
-		// });
+		// when time changes
+		const minute = ref(0);
+		const second = ref(0);
+		// when item in packs is transfered (elementTransfer in dragEnd and undo)
+		const moves = ref(0);
+		// when packs.final changes
+		const finalNum = ref(0);
 
-		// event handler
+		// 4. Functions which used in other functions
+
+		// used in initCardsPack to execute cards shuffling
+		const shuffle = (array) => {
+			for (let i = array.length - 1; i > 0; i--) {
+				let j = Math.floor(Math.random() * (i + 1));
+				[array[i], array[j]] = [array[j], array[i]];
+			}
+		};
+		// used in getBoundary to get left, top, right, bottom of an element
+		const getElementRange = (elem) => {
+			return {
+				left: elem.getBoundingClientRect().left,
+				top: elem.getBoundingClientRect().top,
+				right: elem.getBoundingClientRect().right,
+				bottom: elem.getBoundingClientRect().bottom,
+			};
+		};
+		// used in elemrntTransfer and execute in onBeforeMount to get hintArray
+		const getHintArray = () => {
+			const hintTarget = ["temp", "final", "col"];
+			const potentialHint = [];
+			hintArray.value = [];
+			for (let i = 0; i < hintTarget.length; i++) {
+				packs[hintTarget[i]].forEach((item, index) => {
+					if (hintTarget[i] === "final") {
+						potentialHint.push({
+							parent: hintTarget[i],
+							index,
+							acceptCard: item.last
+								? item.last.acceptCard
+								: `${Object.keys(suits)[index] + 1}`,
+						});
+					} else {
+						potentialHint.push({
+							parent: hintTarget[i],
+							index,
+							card: item.last ? item.last.card : null,
+							acceptCardType: item.last
+								? item.last.acceptCardType
+								: "All",
+							type: item.last ? item.last.type : null,
+						});
+					}
+				});
+			}
+
+			potentialHint.forEach((hintItem) => {
+				if (hintItem.parent === "temp" && hintItem.card) {
+					potentialHint
+						.filter((i) => i.parent !== "temp")
+						.forEach((item) => {
+							if (
+								item.parent === "final" &&
+								hintItem.card === item.acceptCard
+							) {
+								hintArray.value.push([hintItem, item]);
+							} else if (
+								(item.parent === "col" &&
+									hintItem.type === item.acceptCardType) ||
+								item.acceptCardType === "All"
+							) {
+								hintArray.value.push([hintItem, item]);
+							}
+						});
+				} else if (hintItem.parent === "col" && hintItem.card) {
+					potentialHint.forEach((item) => {
+						if (
+							item.parent === "final" &&
+							hintItem.card === item.acceptCard
+						) {
+							hintArray.value.push([hintItem, item]);
+						} else if (
+							item.parent === "temp" &&
+							item.acceptCardType == "All"
+						) {
+							hintArray.value.push([hintItem, item]);
+						} else {
+							// col --> col
+						}
+					});
+				}
+			});
+			hintArrayLength.value = hintArray.value.length;
+			hintIndex.value = 0;
+		};
+		// used in dragStart to get all cards behind a card
+		const getAllNextCards = (elem) => {
+			let nexts = { parent: "", parentIndex: null, indexes: [] };
+			const id = elem.id;
+			[nexts.parent, nexts.parentIndex] =
+				elem.parentElement.id.split(/(\d+)/);
+			nexts.parentIndex = nexts.parentIndex - 0 - 1;
+			let cardIndex = packs[nexts.parent][nexts.parentIndex].findIndex(
+				(item) => item.card === id
+			);
+			const packLength = packs[nexts.parent][nexts.parentIndex].length;
+
+			while (cardIndex < packLength) {
+				nexts.indexes.push(cardIndex);
+				cardIndex++;
+			}
+			return nexts;
+		};
+		// used in dragStart to check which cards to set movingCardsArray
+		const checkIsMovable = (cardsArray) => {
+			const l = cardsArray.indexes.length;
+			movingCardsArray.parent = cardsArray.parent;
+			movingCardsArray.parentIndex = cardsArray.parentIndex;
+			movingCardsArray.indexes.push(cardsArray.indexes[0]);
+
+			for (let i = 0; i < l; i++) {
+				const p = cardsArray.indexes[i];
+				const previousCard =
+					packs[cardsArray.parent][cardsArray.parentIndex][p];
+				const nextCard =
+					packs[cardsArray.parent][cardsArray.parentIndex][p + 1];
+
+				if (nextCard) {
+					const type = previousCard.acceptCardType;
+					const nextCardType = nextCard.type;
+					if (type === nextCardType) {
+						movingCardsArray.indexes.push(
+							cardsArray.indexes[i + 1]
+						);
+					}
+				}
+			}
+
+			if (l !== 1 && movingCardsArray.indexes.length !== l) {
+				movingCardsArray.parent = "";
+				movingCardsArray.parentIndex = null;
+				movingCardsArray.indexes = [];
+			}
+		};
+		// used in getArea to get which pack is to be pushed into cards
+		const getAreaIndex = (indexCount, indexLength, limitBoundary) => {
+			let packIndex = indexCount;
+			while (
+				record.mouse.last.x >
+				(packIndex < indexCount + indexLength - 1
+					? dropPosition[packIndex].right / 2 +
+					  dropPosition[packIndex + 1].left / 2
+					: limitBoundary)
+			) {
+				packIndex++;
+			}
+
+			packIndex -= indexCount;
+			return packIndex;
+		};
+		// used in drag to get mouse target pack
+		const getArea = (e) => {
+			record.mouse.push({ x: e.pageX, y: e.pageY });
+
+			if (
+				record.mouse.last.x > boundaries.leftHorizontal &&
+				record.mouse.last.x < boundaries.rightHorizontal
+			) {
+				if (record.mouse.last.y > boundaries.vertical) {
+					mouseArea.pack = "col";
+					mouseArea.packIndex = getAreaIndex(
+						packs.temp.length + packs.final.length,
+						packs.col.length,
+						boundaries.rightHorizontal
+					);
+				} else if (record.mouse.last.x < boundaries.topLeftHorizontal) {
+					mouseArea.pack = "temp";
+					mouseArea.packIndex = getAreaIndex(
+						0,
+						packs.temp.length,
+						boundaries.topLeftHorizontal
+					);
+				} else if (
+					record.mouse.last.x > boundaries.topRightHorizontal
+				) {
+					mouseArea.pack = "final";
+					mouseArea.packIndex = getAreaIndex(
+						packs.temp.length,
+						packs.final.length,
+						boundaries.rightHorizontal
+					);
+				} else {
+					mouseArea.pack = null;
+					mouseArea.packIndex = null;
+				}
+			} else {
+				mouseArea.pack = null;
+				mouseArea.packIndex = null;
+			}
+		};
+		// used in dragEnd and undo to transfer card object in packs
+		const elementTransfer = (targetPack, sourcePack, isUndo = false) => {
+			const sliceLength = movingCardsArray.indexes.length;
+			const movingCardsPack = sourcePack.slice(-sliceLength);
+			sourcePack.splice(-sliceLength, sliceLength);
+			targetPack.push(...movingCardsPack);
+			cardReturnBack(targetPack);
+			if (mouseArea.pack === "final") {
+				finalNum.value++;
+			}
+
+			if (!isUndo) {
+				const { pack, packIndex } = mouseArea;
+				const { parent, parentIndex } = movingCardsArray;
+				const length = movingCardsArray.indexes.length;
+				record.moves.push({
+					target: { pack, packIndex },
+					source: { parent, parentIndex },
+					length,
+				});
+				moves.value++;
+				//console.log("record: ", record.moves);
+			} else {
+				record.moves.pop();
+				moves.value--;
+				//console.log("record: ", record.moves);
+			}
+			getHintArray();
+			//console.log("hint: ", hintArray.value);
+		};
+		// used in dragEnd to delete card's tranform
+		const cardReturnBack = (cardPack) => {
+			const tl = cardPack.length;
+			const ml = movingCardsArray.indexes.length;
+			if (tl !== 0) {
+				movingCardsArray.indexes.forEach((item, index) => {
+					cardPack[tl - ml + index].styleObject.transform =
+						"translate(0px, 0px)";
+					cardPack[tl - ml + index].styleObject.zIndex = 10;
+					delete cardPack[tl - ml + index].styleObject.transform;
+				});
+			}
+		};
+
+		// 5. Functionality
+
+		// 5-1 express function
+		// return cards and cardsForshuffle
+		const initCards = (array = []) => {
+			for (let i = 1; i < 14; i++) {
+				Object.keys(suits).forEach((suit) => {
+					array.push({
+						card: `${suit + i}`,
+						isHoverHint: false,
+						styleObject: {
+							backgroundImage: `url(./F2E_W2_material/material/cards_background/${
+								suit + i
+							}.png)`,
+							left: "0px",
+							top: "0px",
+							zIndex: 10,
+							opacity: 0,
+						},
+						acceptCardType:
+							(suit === "S" || suit === "C" ? "red" : "black") +
+							(i - 1),
+						type:
+							(suit === "S" || suit === "C" ? "black" : "red") +
+							i,
+						acceptCard: `${suit + (i + 1)}`,
+					});
+				});
+			}
+			return array;
+		};
+
+		// 5-2 statement for render
+		// set game status to "new"
 		const newGameHandler = () => {
 			status.code = "new";
 		};
+		// set game status to "restart"
 		const restartHandler = () => {
 			status.code = "restart";
 		};
+		// set game status to "inGame"
 		const closeHandler = () => {
 			status.code = "inGame";
 		};
+		// set game status to "init" and isShuffle to true
 		const startNewGame = () => {
-			closeHandler();
+			isShuffle.value = true;
 			status.code = "init";
-
-			finalRefs.value.forEach((c) => {
-				c.innerHTML = "";
-			});
-			tempRefs.value.forEach((c) => {
-				c.innerHTML = "";
-			});
-			colRefs.value.forEach((c) => {
-				c.innerHTML = "";
-			});
-			Object.keys(cardspack).forEach((key) => {
-				cardspack[key] = [];
-			});
-
-			initCardsPack(true);
 		};
+		// set game status to "init" and isShuffle to false
 		const restartCurrentGame = () => {
-			closeHandler();
+			isShuffle.value = false;
 			status.code = "init";
-
-			finalRefs.value.forEach((c) => {
-				c.innerHTML = "";
-			});
-			tempRefs.value.forEach((c) => {
-				c.innerHTML = "";
-			});
-			colRefs.value.forEach((c) => {
-				c.innerHTML = "";
-			});
-			Object.keys(cardspack).forEach((key) => {
-				cardspack[key] = [];
-			});
-
-			initCardsPack(false);
 		};
-
+		// mouse hoveer
+		const hoverHint = (e) => {
+			//console.log(mouseArea.pack);
+			// record.card = packs[mouseArea.pack][mouseArea.packIndex].find(
+			// 	(item) => {
+			// 		item.card === e.target.id;
+			// 	}
+			// );
+			// console.log(record.card);
+		};
+		// drag start
 		const dragStart = (e) => {
-			//let crt = this.cloneNode(true);
-			//crt.style.opacity = "1";
-			//document.body.appendChild(crt);
-			//e.dataTransfer.setDragImage(crt, 0, 0);
-			e.dataTransfer.setData("text/plain", e.target.id);
-			//e.dataTransfer.dragEffect = "move";
+			// drag with translate change, so temporily remove "transition" class
+			isTransition.value = false;
+			isDragging.value = true;
+			movingCardsArray.parent = "";
+			movingCardsArray.parentIndex = null;
+			movingCardsArray.indexes = [];
+
+			// set base mouse position
+			record.mouse.push({ x: e.pageX, y: e.pageY });
+			record.position.x = record.mouse.last.x;
+			record.position.y = record.mouse.last.y;
+
+			// get cards which is movable
+			checkIsMovable(getAllNextCards(e.target));
 		};
+		// drag
 		const drag = (e) => {
-			// e.target.style.position = "absolute";
-			// e.target.style.left = `${e.clientX}px`;
-			// e.target.style.top = `${e.clientY}px`;
-			e.target.style.opacity = "0";
-			//e.target.draggable.cursor = "pointer"
-		};
-		const dragEnd = (e) => {
-			// e.target.style.position = "relative";
-			// e.target.style.left = "0px";
-			// e.target.style.top = "0px";
-			e.target.style.opacity = "1";
-			//e.dataTransfer.effectAllowed = "move";
-		};
-		const dropped = (e) => {
-			cancelDefault(e);
-			let id = e.dataTransfer.getData("text/plain");
-			let ids = cardRefs.value.map((el) => el.id);
-			let c = ids.indexOf(id);
-			if (
-				e.target.className === "card" ||
-				e.target.className === "space_card"
-			) {
-				let parentClass = e.target.parentElement.classList;
-				if (parentClass.contains("final")) {
-					cardRefs.value[c].style.marginTop = "0px";
-				} else if (parentClass.contains("col")) {
-					cardRefs.value[c].style.marginTop =
-						e.target.className === "space_card"
-							? "-147px"
-							: "-110px";
-				} else {
-					return false;
-				}
-				e.target.parentElement.appendChild(cardRefs.value[c]);
-			} else {
-				cardRefs.value[c].style.marginTop = "0px";
-				e.target.appendChild(cardRefs.value[c]);
+			getArea(e);
+			if (isDragging.value) {
+				movingCardsArray.indexes.forEach((item) => {
+					packs[movingCardsArray.parent][
+						movingCardsArray.parentIndex
+					][item].styleObject.transform = `translate(${
+						record.mouse.last.x - record.position.x
+					}px, ${record.mouse.last.y - record.position.y}px)`;
+					packs[movingCardsArray.parent][
+						movingCardsArray.parentIndex
+					][item].styleObject.zIndex = 999;
+				});
 			}
 		};
-		// function dragOver(e){
-		//  cancelDefault(e);
-		//  e.dataTransfer.dropEffect = "move"
-		// };
-		const cancelDefault = (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			return false;
+		//drag end
+		const dragEnd = (e) => {
+			const { pack, packIndex } = mouseArea;
+			const packLength = packs[pack][packIndex].length;
+			const sourceType =
+				packs[movingCardsArray.parent][movingCardsArray.parentIndex][
+					movingCardsArray.indexes[0]
+				].type;
+			const sourceCard =
+				packs[movingCardsArray.parent][movingCardsArray.parentIndex][
+					movingCardsArray.indexes[0]
+				].card;
+			const sourcePoint = e.target.dataset.point - 0;
+			const sourceColor = e.target.dataset.color;
+
+			if (pack === "col") {
+				if (
+					packLength !== 0 &&
+					sourceType ===
+						packs[pack][packIndex][packLength - 1].acceptCardType &&
+					movingCardsArray.indexes.length <= maxLength.nonEmpty
+				) {
+					elementTransfer(
+						packs[pack][packIndex],
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				} else if (
+					packLength === 0 &&
+					movingCardsArray.indexes.length <= maxLength.empty
+				) {
+					elementTransfer(
+						packs[pack][packIndex],
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				} else {
+					cardReturnBack(
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				}
+			} else if (
+				pack === "temp" &&
+				movingCardsArray.indexes.length === 1
+			) {
+				if (packs.temp[packIndex].length === 0) {
+					elementTransfer(
+						packs[pack][packIndex],
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				} else {
+					cardReturnBack(
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				}
+			} else if (
+				pack === "final" &&
+				movingCardsArray.indexes.length === 1
+			) {
+				if (
+					packLength !== 0 &&
+					sourceCard ===
+						packs[pack][packIndex][packLength - 1].acceptCard
+				) {
+					elementTransfer(
+						packs[pack][packIndex],
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				} else if (
+					packLength === 0 &&
+					sourceCard === Object.keys(suits)[packIndex] + 1
+				) {
+					elementTransfer(
+						packs[pack][packIndex],
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				} else {
+					cardReturnBack(
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						]
+					);
+				}
+			} else {
+				cardReturnBack(
+					packs[movingCardsArray.parent][movingCardsArray.parentIndex]
+				);
+			}
+
+			isTransition.value = true;
+			isDragging.value = false;
+		};
+		// undo the steps
+		const undo = () => {
+			status.code = "inGame";
+			if (record.moves.length > 0) {
+				const lastStep = record.moves.last;
+				if (lastStep.target.pack === "final") {
+					finalNum.value--;
+				}
+				elementTransfer(
+					packs[lastStep.source.parent][lastStep.source.parentIndex],
+					packs[lastStep.target.pack][lastStep.target.packIndex],
+					true
+				);
+			}
+		};
+		// get hint
+		const hint = () => {
+			if (hintArrayLength.value > 0) {
+				hintIndex.value = hintArray.value[hintIndex.value]
+					? hintIndex.value
+					: 0;
+				const hintItem = hintArray.value[hintIndex.value];
+				hintItem.forEach((item) => {
+					if (item.card) {
+						packs[item.parent][item.index].last.isHoverHint = true;
+					} else {
+						document
+							.getElementById(`${item.parent + (item.index + 1)}`)
+							.firstElementChild.classList.add("hoverHint");
+					}
+					setTimeout(() => {
+						if (item.card) {
+							packs[item.parent][
+								item.index
+							].last.isHoverHint = false;
+						} else {
+							document
+								.getElementById(
+									`${item.parent + (item.index + 1)}`
+								)
+								.firstElementChild.classList.remove(
+									"hoverHint"
+								);
+						}
+					}, 800);
+				});
+				hintIndex.value++;
+			}
 		};
 
-		// message status
+		// 5-3 statement not for render
+		// function to set packs
+		const initCardsPack = () => {
+			// shuffle...
+			if (isShuffle.value) {
+				shuffle(cardsForShuffle.value);
+			}
+
+			// distribute cards
+			let j = 0;
+			for (let i = 0; i < cardsForShuffle.value.length; i++) {
+				if (i < 28) {
+					if (packs.col[j].length < 7) {
+						packs.col[j].push(cardsForShuffle.value[i]);
+					} else {
+						j++;
+						packs.col[j].push(cardsForShuffle.value[i]);
+					}
+				} else {
+					if (packs.col[j].length < 6) {
+						packs.col[j].push(cardsForShuffle.value[i]);
+					} else {
+						j++;
+						packs.col[j].push(cardsForShuffle.value[i]);
+					}
+				}
+			}
+		};
+		// function to set maxLength
+		const getMaxLength = () => {
+			const emptyTemp = packs.temp.filter((item) => item.length === 0);
+			const emptyCol = packs.col.filter((item) => item.length === 0);
+			maxLength.nonEmpty = (emptyTemp.length + 1) * (emptyCol.length + 1);
+			maxLength.empty = (emptyTemp.length + 1) * emptyCol.length;
+		};
+		// function to set dropPosition and boundaries
+		const getBoundary = () => {
+			dropArea.forEach((item) => {
+				item.value.forEach((subItem) => {
+					dropPosition.push(getElementRange(subItem));
+				});
+			});
+
+			// set boundaries
+			boundaries.vertical =
+				(dropPosition[0].bottom + dropPosition[8].top) / 2;
+			boundaries.leftHorizontal = dropPosition[8].left - 20;
+			boundaries.rightHorizontal = dropPosition[15].right + 20;
+			boundaries.topLeftHorizontal = dropPosition[3].right + 20;
+			boundaries.topRightHorizontal = dropPosition[4].left - 20;
+		};
+		// function to set shuffler and to distribute cards
+		const cardsDistributing = () => {
+			const ids = cardsForShuffle.value.map((item) => item.card); // get shuffle order
+			let index = 0;
+
+			// set cards invisible
+			cardsForShuffle.value.forEach((item) => {
+				item.styleObject.opacity = 0;
+			});
+
+			// animation of cards distributing
+			shuffler = setInterval(() => {
+				const mod = index % 4;
+
+				// get cards to final spaces first
+				if (index < 52) {
+					const c = ids.indexOf(cards.value[index].card);
+					const colIndex =
+						c < 28 ? parseInt(c / 7) : parseInt((c - 28) / 6) + 4;
+					const cardIndex = c < 28 ? c % 7 : (c - 28) % 6;
+					// const offsetX =
+					// 	finalRefs.value[mod].getBoundingClientRect().left -
+					// 	cardRefs.value[c].getBoundingClientRect().left;
+					// const offsetY =
+					// 	finalRefs.value[mod].getBoundingClientRect().top -
+					// 	cardRefs.value[c].getBoundingClientRect().top;
+					const offsetX =
+						finalRefs.value[mod].getBoundingClientRect().left -
+						document.getElementById(ids[c]).getBoundingClientRect()
+							.left;
+					const offsetY =
+						finalRefs.value[mod].getBoundingClientRect().top -
+						document.getElementById(ids[c]).getBoundingClientRect()
+							.top;
+
+					packs.col[colIndex][
+						cardIndex
+					].styleObject.left = `${offsetX}px`;
+					packs.col[colIndex][cardIndex].styleObject.top = `${
+						offsetY - (parseInt(index / 4) - 1) * 1.5
+					}px`;
+					packs.col[colIndex][cardIndex].styleObject.zIndex =
+						index + 10;
+					packs.col[colIndex][cardIndex].styleObject.opacity = 1;
+				} else if (index < 104) {
+					isTransition.value = true;
+					//then return cards back to its orginal place
+					const c = ids.indexOf(cards.value[103 - index].card);
+					const colIndex =
+						c < 28 ? parseInt(c / 7) : parseInt((c - 28) / 6) + 4;
+					const cardIndex = c < 28 ? c % 7 : (c - 28) % 6;
+
+					packs.col[colIndex][cardIndex].styleObject.left = "0px";
+					packs.col[colIndex][cardIndex].styleObject.top = "0px";
+					packs.col[colIndex][cardIndex].styleObject.zIndex = 10;
+				} else {
+					clearInterval(shuffler);
+					status.code = "inGame";
+				}
+				index++;
+			}, shuffleSpeed);
+		};
+
+		// 6. Refs and set refs
+
+		// define ref of each area and set ref function
+		const tempRefs = ref([]);
+		const finalRefs = ref([]);
+		const colRefs = ref([]);
+		const cardRefs = ref([]);
+		const setTempRef = (el) => {
+			if (el) tempRefs.value.push(el);
+		};
+		const setFinalRef = (el) => {
+			if (el) finalRefs.value.push(el);
+		};
+		const setColRef = (el) => {
+			if (el) colRefs.value.push(el);
+		};
+		const setCardRef = (el) => {
+			if (el) cardRefs.value.push(el);
+		};
+
+		// 3. Other variables which don't have to be watched
+
+		// used to render and in initCards, dragEnd, to get suit and set by default
+		const suits = { S: "spade", H: "heart", D: "diamond", C: "club" };
+		// used in statusInfo and set by default
 		const buttonInfo = {
 			new: {
 				function: startNewGame,
@@ -173,10 +733,11 @@ const app = {
 				content: "PLAY AGAIN",
 			},
 			undo: {
-				function: "",
+				function: undo,
 				content: "UNDO",
 			},
 		};
+		// used in status.code watch function and set by default
 		const statusInfo = {
 			win: {
 				img: "joy",
@@ -203,140 +764,84 @@ const app = {
 				button: [buttonInfo.restart, buttonInfo.new, buttonInfo.undo],
 			},
 		};
-
-		// set cards
-		const initCards = () => {
-			for (let i = 1; i < 14; i++) {
-				Object.keys(suit).forEach((c) => {
-					cards.push(`${c + i}`);
-					cardsShuffle.push({
-						cards: `${c + i}`,
-						suit: c,
-						point: i,
-						img: `url(./F2E_W2_material/material/cards_background/${
-							c + i
-						}.png)`,
-					});
-				});
-			}
+		// used in cardsDistributing to determine shuffle speed and set by default
+		const shuffleSpeed = 10;
+		// used in cardsDistributing to play distributing animation and set by default
+		let shuffler = null;
+		// used when status.code changes and set by default
+		let timer = null;
+		// used in getBoundary to make dropPosition and set by default
+		const dropArea = [tempRefs, finalRefs, colRefs];
+		// used in getAreaIndex to determine which parent element to be dropped
+		// when mouse up and set by getBoundary
+		const dropPosition = [];
+		// used in getArea and set by getBoundary
+		const boundaries = {
+			vertical: 0,
+			leftHorizontal: 0,
+			rightHorizontal: 0,
+			topLeftHorizontal: 0,
+			topRightHorizontal: 0,
 		};
 
-		// suffle function
-		// Fisher-Yates algorithm
-		const shuffle = (array) => {
-			for (let i = array.length - 1; i > 0; i--) {
-				let j = Math.floor(Math.random() * (i + 1));
-				[array[i], array[j]] = [array[j], array[i]];
-			}
-		};
+		// 7. Computed Variables
 
-		// get absolute position of an element
-		// const elemPosition = (elem) => {
-		// 	let x = 0,
-		// 		y = 0;
-		// 	while (elem.offsetParent) {
-		// 		x += elem.offsetLeft;
-		// 		y += elem.offsetTop;
-		// 		elem = elem.offsetParent;
-		// 	}
-		// 	return { x, y };
-		// };
+		// cards and cardForShuffling
+		const cards = computed(() => initCards([]));
+		const cardsForShuffle = computed(() => initCards([]));
 
-		// initialize card packs
-		const initCardsPack = (isShuffle = true) => {
-			// shuffle...
-			if (isShuffle) {
-				shuffle(cardsShuffle);
-			}
+		// 8. watch function
 
-			// distribute cards
-			let j = 0;
-			for (let i = 0; i < cardsShuffle.length; i++) {
-				if (j <= 7) {
-					cardspack[Object.keys(cardspack)[j]].push(cardsShuffle[i]);
-					j++;
+		// status.code
+		watch(
+			() => status.code,
+			(newVal, oldVal) => {
+				// propable situation:
+				// init --> inGame
+				// inGame <--> new
+				// inGame <--> restart
+				// inGame <--> win
+				// inGame <--> lose
+				// new --> init
+				// restart --> iit
+				// win --> init
+				// lose --> init
+				// lose --> inGame
+
+				// stop timing
+				clearInterval(timer);
+				// check which condition is to be applied
+				if (newVal === "inGame") {
+					status.info = {};
+					timer = setInterval(() => {
+						time.value++;
+					}, 1000);
+				} else if (newVal === "init") {
+					status.info = {};
+					time.value = 0;
+					finalNum.value = 0;
+					moves.value = 0;
+					isTransition.value = false;
+					record.moves = [];
+
+					// clean out packs
+					Object.values(packs).forEach((item) =>
+						item.forEach((subItem) => (subItem.length = 0))
+					);
+
+					initCardsPack();
+					cardsDistributing();
+					getHintArray();
 				} else {
-					j = 0;
-					cardspack[Object.keys(cardspack)[j]].push(cardsShuffle[i]);
-					j++;
+					status.info = statusInfo[status.code];
 				}
 			}
-
-			// animation of cards distributing
-			shuffler = setInterval(() => {
-				let mod = index.value % 4;
-				let ids = cardRefs.value.map((el) => el.id);
-
-				// get cards to final spaces first
-				if (index.value < 52) {
-					let c = ids.indexOf(cards[index.value]);
-					let offsetX =
-						finalRefs.value[mod].getBoundingClientRect().left -
-						// elemPosition(finalRefs.value[mod]).x -
-						// elemPosition(cardRefs.value[c]).x;
-						cardRefs.value[c].getBoundingClientRect().left;
-					let offsetY =
-						finalRefs.value[mod].getBoundingClientRect().top -
-						// elemPosition(finalRefs.value[mod]).y -
-						// elemPosition(cardRefs.value[c]).y;
-						cardRefs.value[c].getBoundingClientRect().top;
-
-					cardRefs.value[c].style.left = `${offsetX}px`;
-					cardRefs.value[c].style.top = `${
-						offsetY - (parseInt(index.value / 4) - 1) * 1.5
-					}px`;
-					cardRefs.value[c].style.zIndex = index.value + 10;
-					cardRefs.value[c].style.opacity = 1;
-				} else if (index.value < 104) {
-					// then return cards back to its orginal place
-					let c = ids.indexOf(cards[103 - index.value]);
-					cardRefs.value[c].style.left = "0px";
-					cardRefs.value[c].style.top = "0px";
-					cardRefs.value[c].style.zIndex = "10";
-				} else {
-					clearInterval(shuffler);
-					status.code = "inGame";
-				}
-				index.value++;
-			}, shuffleSpeed);
-		};
-
-		// set refs
-		initCards();
-		const setTempRef = (el) => {
-			if (el) {
-				tempRefs.value.push(el);
-			}
-		};
-		const setFinalRef = (el) => {
-			if (el) {
-				finalRefs.value.push(el);
-			}
-		};
-		const setColRef = (el) => {
-			if (el) {
-				colRefs.value.push(el);
-			}
-		};
-		const setCardRef = (el) => {
-			if (el) {
-				cardRefs.value.push(el);
-				//console.log(elemPosition(el).x, elemPosition(el).y);
-			}
-		};
-
-		onMounted(() => {
-			initCardsPack();
+		);
+		// packs -->  maxLength
+		watch(packs, (newPacks, oldPacks) => {
+			getMaxLength();
 		});
-		onBeforeUpdate(() => {
-			tempRefs.value = [];
-			finalRefs.value = [];
-			colRefs.value = [];
-			cardRefs.value = [];
-		});
-
-		// watch function
-		// timing...
+		// time  -->  minute, second
 		watch(time, (newTime, oldTime) => {
 			if (newTime !== 0) {
 				if (second.value === 59) {
@@ -347,64 +852,74 @@ const app = {
 				if (newTime % 60 === 0) {
 					minute.value++;
 				}
+			} else {
+				minute.value = 0;
+				second.value = 0;
+			}
+		});
+		// finalNum  -->  status.code = "win"
+		watch(finalNum, (newVal, oldVal) => {
+			//console.log("new final num: ", newVal);
+			//console.log("old final num: ", oldVal);
+			if (newVal === 52) {
+				status.code = "win";
+			}
+		});
+		// hintArrayLength -->  status.code = "lose"
+		watch(hintArrayLength, (newVal, oldVal) => {
+			if (newVal === 0 && finalNum.value !== 52) {
+				status.code = "lose";
 			}
 		});
 
-		// game status chage
-		watch(
-			() => status.code,
-			(newVal, oldVal) => {
-				console.log(newVal);
-				if (newVal === "inGame") {
-					status.info = {};
-					timer = setInterval(() => {
-						time.value++;
-					}, 1000);
-				} else if (newVal === "init") {
-					time.value = 0;
-					minute.value = 0;
-					second.value = 0;
-					index.value = 0;
-					moves.value = 0;
-					opacity.value = 0;
-					status.info = {};
-					clearInterval(timer);
-				} else {
-					clearInterval(timer);
-					status.info = statusInfo[status.code];
-				}
-			}
-		);
+		// 9. Lifecycle functions
 
-		// set cards visible while distributing
-		watch(index, (newIndex, oldIndex) => {
-			if (newIndex > 51) {
-				opacity.value = 1;
-			}
+		onBeforeMount(() => {
+			// shuffles cards and distributes before mounted
+			initCardsPack();
+			// get hibt array
+			getHintArray();
+		});
+		onMounted(() => {
+			//.......
+			window.addEventListener("resize", getBoundary);
+			// calculate elements' boundaries
+			getBoundary();
+			// play card distributing animation
+			cardsDistributing();
+		});
+		onBeforeUpdate(() => {
+			// update refs
+			tempRefs.value = [];
+			finalRefs.value = [];
+			colRefs.value = [];
+			cardRefs.value = [];
 		});
 
 		return {
-			suit,
-			status,
 			minute,
 			second,
 			moves,
-			opacity,
-			tempNum,
+			maxLength,
+			record,
+			mouseArea,
+			isTransition,
+			suits,
+			packs,
+			status,
 			setTempRef,
-			finalNum,
 			setFinalRef,
 			setColRef,
 			setCardRef,
-			cardspack,
 			newGameHandler,
 			restartHandler,
 			closeHandler,
+			hoverHint,
 			dragStart,
 			drag,
 			dragEnd,
-			dropped,
-			cancelDefault,
+			undo,
+			hint,
 		};
 	},
 };

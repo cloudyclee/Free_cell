@@ -18,8 +18,15 @@
     <div class="container" id="app">
         <div class="top">
             <div class="tempSpace">
-                <div class="temp" v-for="index in tempNum" :key="index" :ref="setTempRef" @drop="dropped($event)"
-                    @dragenter="cancelDefault($event)" @dragover="cancelDefault($event)"></div>
+                <div v-for="(elem, index) in packs.temp" :key="elem" :ref="setTempRef" :id="`temp${index+1}`"
+                    class="temp">
+                    <div class="space_card"></div>
+                    <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card"
+                        :style="item.styleObject"
+                        :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]"
+                        @mousedown="dragStart($event)" @mousemove="drag($event)" @mouseup="dragEnd($event)">
+                    </div>
+                </div>
             </div>
             <div class="logo">
                 <img src="./F2E_W2_material/material/king_happy.png" alt="">
@@ -27,21 +34,45 @@
                 FREECELL
             </div>
             <div class="finalSpace">
-                <div class="final" :class="[Object.values(suit)[index-1]]" v-for="index in finalNum" :key="index"
-                    :ref="setFinalRef" @drop="dropped($event)" @dragenter="cancelDefault($event)"
-                    @dragover="cancelDefault($event)"></div>
+                <div v-for="(elem,index) in packs.final" :key="elem" :ref="setFinalRef" :id="`final${index+1}`"
+                    class="final" :class="[Object.values(suits)[index]]">
+                    <div class="space_card"></div>
+                    <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card"
+                        :style="item.styleObject"
+                        :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]">
+                    </div>
+                </div>
             </div>
         </div>
         <div class="cardSpace">
-            <div class="col" v-for="item in cardspack" :key="item" :ref="setColRef" @drop="dropped($event)"
-                @dragenter="cancelDefault($event)" @dragover="cancelDefault($event)">
+            <div v-for="(elem, index) in packs.col" :key="elem" :ref="setColRef" :id="`col${index+1}`" class="col">
                 <div class="space_card"></div>
-                <div class="card" v-for="c in item" :key="c.cards" :id="c.cards" :data-suit="c.suit"
-                    :data-point="c.point" :style="{backgroundImage: c.img, opacity: opacity}" :ref="setCardRef"
-                    @dragstart="dragStart($event)" @drag="drag($event)" @dragend="dragEnd($event)"
-                    @drop="dropped($event)" @dragenter="cancelDefault($event)" @dragover="cancelDefault($event)"
-                    draggable=true></div>
+                <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card" :style="item.styleObject"
+                    :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]"
+                    @mousedown="dragStart($event)" @mousemove="drag($event)" @mouseup="dragEnd($event)"
+                    @mouseenter="hoverHint($event)">
+                </div>
             </div>
+        </div>
+        <div class="alert">
+            <p>
+                <span>若要移動牌堆至 <strong>非空欄</strong> ，目前最多可移動 <strong>{{ maxLength.nonEmpty }}</strong> 張牌，其中 m = ( 空格數 +
+                    1
+                    )
+                    X (
+                    空欄數
+                    + 1 )
+                </span>
+                <br>
+                <span>若要移動牌堆至 <strong>空欄</strong> 時，目前最多可移動 <strong>{{ maxLength.empty }}</strong> 張牌，其中 n = ( 空格數 +
+                    1 ) X
+                    空欄數
+                </span>
+                <!-- <br>
+                <span>{{ record.position }}</span>
+                <br>
+                <span>target: {{ mouseArea.pack }}[{{ mouseArea.packIndex }}]</span> -->
+            </p>
         </div>
         <hr>
         <div class="info">
@@ -57,8 +88,8 @@
             <div class="functionButton">
                 <div id="newGame" @click="newGameHandler">NEW GAME</div>
                 <div id="restart" @click="restartHandler">RESTART</div>
-                <div id="hint">HINT</div>
-                <div id="undo">UNDO</div>
+                <div id="hint" @click="hint">HINT</div>
+                <div id="undo" @click="undo">UNDO</div>
             </div>
         </div>
         <transition name="fade">
@@ -77,8 +108,6 @@
         </transition>
     </div>
     <script src="https://unpkg.com/vue@next"></script>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script> -->
     <script type="module" src="./index.js"></script>
 
 </body>

@@ -2,6 +2,10 @@
   font-family: 'Lato', sans-serif;
   color: #222222;
   position: relative;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
 }
 
 html, body {
@@ -26,6 +30,57 @@ html, body {
           user-select: none;
   margin-right: 20px;
   z-index: 10;
+  opacity: 0;
+  -webkit-transform: scale(1) translateY(0px);
+          transform: scale(1) translateY(0px);
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  display: block;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #d5d5d5), to(transparent));
+  background-image: linear-gradient(#d5d5d5 20%, transparent);
+  opacity: 0;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  display: block;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #ffb53e), to(transparent));
+  background-image: linear-gradient(#ffb53e 20%, transparent);
+  opacity: 0;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+}
+
+.card:hover {
+  -webkit-transform: scale(1.02) translateY(-5px);
+          transform: scale(1.02) translateY(-5px);
+}
+
+.card:hover::before {
+  opacity: 0.3;
+}
+
+.card.hoverHint {
+  -webkit-transform: scale(1.02) translateY(-5px);
+          transform: scale(1.02) translateY(-5px);
+}
+
+.card.hoverHint::after {
+  opacity: 0.3;
 }
 
 .container {
@@ -72,37 +127,19 @@ html, body {
   margin: 0px 7.5px;
 }
 
-.top .tempSpace .temp .card {
+.top .tempSpace .temp .space_card {
+  outline: 1px solid transparent;
   -webkit-transition: 0.3s;
   transition: 0.3s;
 }
 
-.top .tempSpace .temp .card::after {
-  content: "";
-  position: absolute;
-  display: block;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100%;
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #d5d5d5), to(transparent));
-  background-image: linear-gradient(#d5d5d5 20%, transparent);
-  opacity: 0;
-}
-
-.top .tempSpace .temp .card:hover {
-  -webkit-transition: -webkit-transform 0.3s;
-  transition: -webkit-transform 0.3s;
-  transition: transform 0.3s;
-  transition: transform 0.3s, -webkit-transform 0.3s;
-  -webkit-transform: scale(1.02) translateY(-5px);
-          transform: scale(1.02) translateY(-5px);
-}
-
-.top .tempSpace .temp .card:hover::after {
-  -webkit-transition: opacity 0.3s;
-  transition: opacity 0.3s;
-  opacity: 0.2;
+.top .tempSpace .temp .space_card.hoverHint {
+  border-radius: 1px;
+  -webkit-box-shadow: 0 0 0 5px rgba(255, 181, 62, 0.4);
+          box-shadow: 0 0 0 5px rgba(255, 181, 62, 0.4);
+  outline: 1px solid rgba(255, 181, 62, 0.4);
+  width: 95px;
+  height: 145px;
 }
 
 .top .finalSpace {
@@ -129,37 +166,19 @@ html, body {
   margin: 0px 7.5px;
 }
 
-.top .finalSpace .final .card {
+.top .finalSpace .final .space_card {
+  outline: 1px solid transparent;
   -webkit-transition: 0.3s;
   transition: 0.3s;
 }
 
-.top .finalSpace .final .card::after {
-  content: "";
-  position: absolute;
-  display: block;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100%;
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #d5d5d5), to(transparent));
-  background-image: linear-gradient(#d5d5d5 20%, transparent);
-  opacity: 0;
-}
-
-.top .finalSpace .final .card:hover {
-  -webkit-transition: -webkit-transform 0.3s;
-  transition: -webkit-transform 0.3s;
-  transition: transform 0.3s;
-  transition: transform 0.3s, -webkit-transform 0.3s;
-  -webkit-transform: scale(1.02) translateY(-5px);
-          transform: scale(1.02) translateY(-5px);
-}
-
-.top .finalSpace .final .card:hover::after {
-  -webkit-transition: opacity 0.3s;
-  transition: opacity 0.3s;
-  opacity: 0.2;
+.top .finalSpace .final .space_card.hoverHint {
+  border-radius: 1px;
+  -webkit-box-shadow: 0 0 0 5px rgba(255, 181, 62, 0.4);
+          box-shadow: 0 0 0 5px rgba(255, 181, 62, 0.4);
+  outline: 1px solid rgba(255, 181, 62, 0.4);
+  width: 95px;
+  height: 145px;
 }
 
 .top .finalSpace .spade {
@@ -203,6 +222,7 @@ html, body {
 
 .cardSpace {
   max-width: 1010px;
+  min-height: 365px;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
@@ -227,41 +247,22 @@ html, body {
   display: inline-block;
   background-color: transparent;
   margin-right: 20px;
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.cardSpace .col .space_card.hoverHint {
+  border-radius: 1px;
+  -webkit-box-shadow: 0 0 0 5px rgba(255, 181, 62, 0.4);
+          box-shadow: 0 0 0 5px rgba(255, 181, 62, 0.4);
+  outline: 1px solid rgba(255, 181, 62, 0.4);
+  width: 95px;
+  height: 145px;
 }
 
 .cardSpace .col .card {
   position: relative;
   margin-top: -110px;
-  -webkit-transition: 0.3s;
-  transition: 0.3s;
-}
-
-.cardSpace .col .card::after {
-  content: "";
-  position: absolute;
-  display: block;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100%;
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(20%, #d5d5d5), to(transparent));
-  background-image: linear-gradient(#d5d5d5 20%, transparent);
-  opacity: 0;
-}
-
-.cardSpace .col .card:hover {
-  -webkit-transition: -webkit-transform 0.3s;
-  transition: -webkit-transform 0.3s;
-  transition: transform 0.3s;
-  transition: transform 0.3s, -webkit-transform 0.3s;
-  -webkit-transform: scale(1.02) translateY(-5px);
-          transform: scale(1.02) translateY(-5px);
-}
-
-.cardSpace .col .card:hover::after {
-  -webkit-transition: opacity 0.3s;
-  transition: opacity 0.3s;
-  opacity: 0.2;
 }
 
 .cardSpace .col .card:nth-child(1) {
@@ -272,12 +273,34 @@ html, body {
   margin-top: -147px;
 }
 
+.cardSpace .col .card:nth-child(2).cardmove {
+  margin-top: 0px;
+}
+
 .cardSpace .col:nth-child(8) .space_card {
   margin-right: 0px;
 }
 
 .cardSpace .col:nth-child(8) .card {
   margin-right: 0px;
+}
+
+.alert {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.alert p {
+  display: inline-block;
+  text-align: center;
+  font: normal normal 800 14px/17px Lato;
+  letter-spacing: 1.4px;
+  margin: 0px;
+}
+
+.alert p span {
+  float: left;
+  font: normal normal 500 12px/12px Lato;
 }
 
 hr {
@@ -494,5 +517,10 @@ hr {
 
 .fade-enter-to, .fade-leave-from {
   opacity: 1;
+}
+
+.transition {
+  -webkit-transition: 0.2s;
+  transition: 0.2s;
 }
 /*# sourceMappingURL=style.css.map */

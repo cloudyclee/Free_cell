@@ -33,6 +33,7 @@ $gray: #e2e2e2
     font-family: 'Lato', sans-serif
     color: $black
     position: relative
+    user-select: none
 
 html, body
     padding: 0px
@@ -47,7 +48,39 @@ html, body
     user-select: none
     margin-right: 20px
     z-index: 10
-
+    opacity: 0
+    transform: scale(1) translateY(0px) 
+    &::before
+        content: ""
+        position: absolute
+        display: block
+        top: 0px
+        left: 0px
+        width: 100%
+        height: 100%
+        background-image: linear-gradient(darken($gray, 5) 20%, transparent)
+        opacity: 0
+        transition: opacity 0.2s
+    &::after
+        content: ""
+        position: absolute
+        display: block
+        top: 0px
+        left: 0px
+        width: 100%
+        height: 100%
+        background-image: linear-gradient($yellow 20%, transparent)
+        opacity: 0
+        transition: opacity 0.2s
+    &:hover
+        transform: scale(1.02) translateY(-5px)
+        &::before
+            opacity: 0.3
+    &.hoverHint
+        transform: scale(1.02) translateY(-5px)
+        &::after
+            opacity: 0.3
+            
 .container
     width: 100%
     background-color: #E2E2E2 
@@ -59,6 +92,7 @@ html, body
     justify-content: center
     align-items: center
     margin: 0px auto
+
     .tempSpace
         display: flex
         justify-content: space-between
@@ -68,24 +102,16 @@ html, body
             border: 2px solid rgba($white, 0.6)
             background-color: transparent
             margin: 0px 7.5px
-            .card
+            .space_card 
+                outline: 1px solid transparent
                 transition: 0.3s
-                &::after
-                    content: ""
-                    position: absolute
-                    display: block
-                    top: 0px
-                    left: 0px
-                    width: 100%
-                    height: 100%
-                    background-image: linear-gradient(darken($gray, 5) 20%, transparent)
-                    opacity: 0
-                &:hover
-                    transition: transform 0.3s
-                    transform: scale(1.02) translateY(-5px)
-                    &::after
-                        transition: opacity 0.3s
-                        opacity: 0.2
+                &.hoverHint
+                    border-radius: 1px
+                    box-shadow: 0 0 0 5px rgba($yellow, 0.4)
+                    outline: 1px solid rgba($yellow, 0.4)
+                    width: 95px
+                    height: 145px
+
     .finalSpace
         display: flex
         justify-content: space-between
@@ -95,24 +121,15 @@ html, body
             background-color: rgba($white, 0.6)
             display: inline-block
             margin: 0px 7.5px
-            .card
+            .space_card
+                outline: 1px solid transparent
                 transition: 0.3s
-                &::after
-                    content: ""
-                    position: absolute
-                    display: block
-                    top: 0px
-                    left: 0px
-                    width: 100%
-                    height: 100%
-                    background-image: linear-gradient(darken($gray, 5) 20%, transparent)
-                    opacity: 0
-                &:hover
-                    transition: transform 0.3s
-                    transform: scale(1.02) translateY(-5px)
-                    &::after
-                        transition: opacity 0.3s
-                        opacity: 0.2
+                &.hoverHint
+                    border-radius: 1px
+                    box-shadow: 0 0 0 5px rgba($yellow, 0.4)
+                    outline: 1px solid rgba($yellow, 0.4)
+                    width: 95px
+                    height: 145px
         .spade
             background-image: url("../F2E_W2_material/material/S.png")
             background-size: 35px auto
@@ -129,6 +146,7 @@ html, body
             background-image: url("../F2E_W2_material/material/C.png")
             background-size: 35px auto
             background-position: center center
+
     .logo
         width: 95px
         text-align: center
@@ -143,6 +161,7 @@ html, body
 
 .cardSpace
     max-width: 1010px
+    min-height: 365px
     display: flex
     justify-content: space-around
     align-items: start
@@ -156,36 +175,40 @@ html, body
             display: inline-block
             background-color: transparent
             margin-right: 20px
+            transition: 0.3s
+            &.hoverHint
+                border-radius: 1px
+                box-shadow: 0 0 0 5px rgba($yellow, 0.4)
+                outline: 1px solid rgba($yellow, 0.4)
+                width: 95px
+                height: 145px
         .card
             position: relative
             margin-top: -110px
-            transition: 0.3s
-            &::after
-                content: ""
-                position: absolute
-                display: block
-                top: 0px
-                left: 0px
-                width: 100%
-                height: 100%
-                background-image: linear-gradient(darken($gray, 5) 20%, transparent)
-                opacity: 0
-            &:hover
-                transition: transform 0.3s
-                transform: scale(1.02) translateY(-5px)
-                &::after
-                    transition: opacity 0.3s
-                    opacity: 0.2
         .card:nth-child(1)
             margin-top: 0px
         .card:nth-child(2)
             margin-top: -147px
+            &.cardmove
+                margin-top: 0px
     .col:nth-child(8)
         .space_card
             margin-right: 0px
         .card
             margin-right: 0px
 
+.alert
+    text-align: center
+    margin-bottom: 30px
+    p
+        display: inline-block
+        text-align: center
+        font: normal normal 800 14px/17px Lato
+        letter-spacing: 1.4px
+        margin: 0px
+        span
+            float: left
+            font: normal normal 500 12px/12px Lato
 hr
     max-width: 1000px
     border-color: $gray
@@ -293,4 +316,9 @@ hr
     opacity: 0
 .fade-enter-to, .fade-leave-from
     opacity: 1
+
+.transition
+    transition: 0.2s
+
+
         
