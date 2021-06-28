@@ -117,71 +117,281 @@ const app = {
 		};
 		// used in elemrntTransfer and execute in onBeforeMount to get hintArray
 		const getHintArray = () => {
-			const hintTarget = ["temp", "final", "col"];
+			const hintPack = ["temp", "final", "col"];
 			const potentialHint = [];
+			let getHint = false;
 			hintArray.value = [];
-			for (let i = 0; i < hintTarget.length; i++) {
-				packs[hintTarget[i]].forEach((item, index) => {
-					if (hintTarget[i] === "final") {
+			// make hint potential list
+			for (let i = 0; i < hintPack.length; i++) {
+				packs[hintPack[i]].forEach((item, index) => {
+					// for final sapce
+					if (hintPack[i] === "final") {
 						potentialHint.push({
-							parent: hintTarget[i],
+							parent: hintPack[i],
 							index,
-							acceptCard: item.last
-								? item.last.acceptCard
-								: `${Object.keys(suits)[index] + 1}`,
+							items: [
+								{
+									// only push "acceptCard" property
+									// cards in final space couldn't move
+									// only could accpet the cards of the same suit
+									acceptCard: item.last
+										? item.last.acceptCard
+										: `${Object.keys(suits)[index] + 1}`,
+									acceptPoint: item.last
+										? item.last.point + 1
+										: null,
+								},
+							],
 						});
-					} else {
+						// for temp space
+					} else if (hintPack[i] === "temp") {
 						potentialHint.push({
-							parent: hintTarget[i],
+							parent: hintPack[i],
 							index,
+							items: [
+								{
+									// cards in temp space don't have "acceptCard" property
+									// they couldn't accept cards like in final space
+									card: item.last ? item.last.card : null,
+									// if the temp space has no cards,
+									// set "acceptCardType" property as "All"
+									acceptCardType: item.last
+										? item.last.acceptCardType
+										: "All",
+									type: item.last ? item.last.type : null,
+									point: item.last ? item.last.point : null,
+								},
+							],
+						});
+						// for col space
+					} else {
+						let pHIndex = packs[hintPack[i]][index].length - 1;
+						const hintCards = [];
+						// first push the last card of the column
+						hintCards.push({
+							// set values as in temp space
 							card: item.last ? item.last.card : null,
 							acceptCardType: item.last
 								? item.last.acceptCardType
 								: "All",
 							type: item.last ? item.last.type : null,
+							point: item.last ? item.last.point : null,
+						});
+						// if the previous card of the last card complies with rules
+						// also push this card into array
+						while (
+							packs[hintPack[i]][index][pHIndex - 1] &&
+							packs[hintPack[i]][index][pHIndex].type ===
+								packs[hintPack[i]][index][pHIndex - 1]
+									.acceptCardType
+						) {
+							hintCards.push({
+								card: item[pHIndex - 1].card,
+								acceptCardType:
+									item[pHIndex - 1].acceptCardType,
+								type: item[pHIndex - 1].type,
+								point: item[pHIndex - 1].point,
+							});
+							pHIndex--;
+						}
+						potentialHint.push({
+							parent: hintPack[i],
+							index,
+							items: hintCards,
 						});
 					}
 				});
 			}
 
-			potentialHint.forEach((hintItem) => {
-				if (hintItem.parent === "temp" && hintItem.card) {
+			// make hint list
+			// temp --> final
+			// temp --> col
+			// col --> temp
+			// col --> final
+			// col --> col
+			potentialHint.forEach((hintSource) => {
+				// hint source: temp
+				if (hintSource.parent === "temp" && hintSource.items[0].card) {
+					// filter col & final items in potential hint list
 					potentialHint
-						.filter((i) => i.parent !== "temp")
-						.forEach((item) => {
+						.filter((item) => item.parent !== "temp")
+						.forEach((hintTarget) => {
+							// temp --> final
 							if (
-								item.parent === "final" &&
-								hintItem.card === item.acceptCard
+								hintTarget.parent === "final" &&
+								hintSource.items[0].card ===
+									hintTarget.items[0].acceptCard
 							) {
-								hintArray.value.push([hintItem, item]);
+								console.log("ht: ", hintTarget);
+								console.log("hs: ", hintSource);
+								// if cards of point 2 in temp space
+								if (hintSource.items[0].point === 2) {
+									// set moving cards array
+									movingCardsArray.parent = hintSource.parent;
+									movingCardsArray.parentIndex =
+										hintSource.index;
+									movingCardsArray.indexes = [
+										packs[hintSource.parent][
+											hintSource.index
+										].length - 1,
+									];
+									// set mouse area as for target
+									mouseArea.pack = hintTarget.parent;
+									mouseArea.packIndex = hintTarget.index;
+									// auto returns to final space
+									elementTransfer(
+										packs[hintTarget.parent][
+											hintTarget.index
+										],
+										packs[hintSource.parent][
+											hintSource.index
+										],
+										false,
+										true
+									);
+									// or other cards can move to final space
+								} else {
+									hintArray.value.push([
+										hintSource,
+										hintTarget,
+									]);
+								}
+								// temp --> col
 							} else if (
-								(item.parent === "col" &&
-									hintItem.type === item.acceptCardType) ||
-								item.acceptCardType === "All"
+								// if the card complies with rules
+								// or the column is empty
+								(hintTarget.parent === "col" &&
+									hintSource.items[0].type ===
+										hintTarget.items[0].acceptCardType) ||
+								hintTarget.items[0].acceptCardType === "All"
 							) {
-								hintArray.value.push([hintItem, item]);
+								hintArray.value.push([hintSource, hintTarget]);
 							}
 						});
-				} else if (hintItem.parent === "col" && hintItem.card) {
-					potentialHint.forEach((item) => {
+					// hint source: col
+				} else if (
+					hintSource.parent === "col" &&
+					hintSource.items[0].card
+				) {
+					potentialHint.forEach((hintTarget) => {
+						// col --> final
 						if (
-							item.parent === "final" &&
-							hintItem.card === item.acceptCard
+							hintTarget.parent === "final" &&
+							hintSource.items[0].card ===
+								hintTarget.items[0].acceptCard
 						) {
-							hintArray.value.push([hintItem, item]);
-						} else if (
-							item.parent === "temp" &&
-							item.acceptCardType == "All"
-						) {
-							hintArray.value.push([hintItem, item]);
-						} else {
+							console.log("ht: ", hintTarget);
+							console.log("hs: ", hintSource);
+							// if cards of ace or of point 2 is the last card of the column
+							if (
+								hintSource.items[0].point === 1 ||
+								hintSource.items[0].point === 2
+							) {
+								getHint = true;
+								// set moving cards array
+								movingCardsArray.parent = hintSource.parent;
+								movingCardsArray.parentIndex = hintSource.index;
+								movingCardsArray.indexes = [
+									packs[hintSource.parent][hintSource.index]
+										.length - 1,
+								];
+								// set mouse area as for target
+								mouseArea.pack = hintTarget.parent;
+								mouseArea.packIndex = hintTarget.index;
+								elementTransfer(
+									packs[hintTarget.parent][hintTarget.index],
+									packs[hintSource.parent][hintSource.index],
+									false,
+									true
+								);
+								// or other cards that can move to final space
+							} else {
+								// first deep copy the object
+								// otherwise slice items would affect the orginal one
+								const hintSourceForFianl = JSON.parse(
+									JSON.stringify(hintSource)
+								);
+								hintSourceForFianl.items = [
+									hintSource.items[0],
+								];
+								hintArray.value.push([
+									hintSourceForFianl,
+									hintTarget,
+								]);
+							}
 							// col --> col
+							// except the same column
+						} else if (
+							hintTarget.parent === "col" &&
+							hintTarget.index !== hintSource.index
+						) {
+							// check every cards combinations in hint source
+							hintSource.items.forEach((sub, subindex) => {
+								const hintSourceCopy = JSON.parse(
+									JSON.stringify(hintSource)
+								);
+								const subSource = hintSourceCopy.items.slice(
+									0,
+									subindex + 1
+								);
+								const subPotentialHint = {
+									parent: hintSource.parent,
+									index: hintSource.index,
+									items: subSource,
+								};
+								// if card(s) complies with rules
+								// and length of combination doesn't reach the max length
+								if (
+									subSource.length <= maxLength.nonEmpty &&
+									hintTarget.items[0].acceptCardType ===
+										subSource.last.type
+								) {
+									hintArray.value.push([
+										subPotentialHint,
+										hintTarget,
+									]);
+									// or target column is empty
+									// and length of combination doesn't reach the max length
+								} else if (
+									hintTarget.items[0].acceptCardType ===
+										"All" &&
+									subSource.length <= maxLength.empty
+								) {
+									console.log("hihi");
+									hintArray.value.push([
+										subPotentialHint,
+										hintTarget,
+									]);
+								}
+							});
+							// col --> temp
+							// targe temp space is emrty
+						} else if (
+							hintTarget.items[0].acceptCardType == "All"
+						) {
+							// do the same thing as the situation where
+							// cards can move to final space do
+							const hintSourceForTemp = JSON.parse(
+								JSON.stringify(hintSource)
+							);
+							hintSourceForTemp.items = [hintSource.items.last];
+							hintArray.value.push([
+								hintSourceForTemp,
+								hintTarget,
+							]);
 						}
 					});
 				}
 			});
+
+			if (getHint) {
+				getHintArray();
+			}
+			// set length of hint array
 			hintArrayLength.value = hintArray.value.length;
+			// set hint array index value
 			hintIndex.value = 0;
+			console.log("hint: ", hintArray.value);
 		};
 		// used in dragStart to get all cards behind a card
 		const getAllNextCards = (elem) => {
@@ -289,12 +499,18 @@ const app = {
 			}
 		};
 		// used in dragEnd and undo to transfer card object in packs
-		const elementTransfer = (targetPack, sourcePack, isUndo = false) => {
+		const elementTransfer = (
+			targetPack,
+			sourcePack,
+			isUndo = false,
+			autoReturn = false
+		) => {
 			const sliceLength = movingCardsArray.indexes.length;
 			const movingCardsPack = sourcePack.slice(-sliceLength);
 			sourcePack.splice(-sliceLength, sliceLength);
 			targetPack.push(...movingCardsPack);
 			cardReturnBack(targetPack);
+			getMaxLength();
 			if (mouseArea.pack === "final") {
 				finalNum.value++;
 			}
@@ -307,16 +523,24 @@ const app = {
 					target: { pack, packIndex },
 					source: { parent, parentIndex },
 					length,
+					autoReturn,
 				});
-				moves.value++;
-				//console.log("record: ", record.moves);
+				if (!autoReturn) {
+					moves.value++;
+					getHintArray();
+				}
+
+				console.log("record: ", record.moves);
+				console.log("-----------------------");
 			} else {
+				if (record.moves.last && !record.moves.last.autoReturn) {
+					moves.value--;
+					getHintArray();
+				}
 				record.moves.pop();
-				moves.value--;
-				//console.log("record: ", record.moves);
+				console.log("record: ", record.moves);
+				console.log("----- THis is Undo ----");
 			}
-			getHintArray();
-			//console.log("hint: ", hintArray.value);
 		};
 		// used in dragEnd to delete card's tranform
 		const cardReturnBack = (cardPack) => {
@@ -327,9 +551,12 @@ const app = {
 					cardPack[tl - ml + index].styleObject.transform =
 						"translate(0px, 0px)";
 					cardPack[tl - ml + index].styleObject.zIndex = 10;
-					delete cardPack[tl - ml + index].styleObject.transform;
+					//delete cardPack[tl - ml + index].styleObject.transform;
 				});
 			}
+
+			isTransition.value = true;
+			isDragging.value = false;
 		};
 
 		// 5. Functionality
@@ -341,6 +568,8 @@ const app = {
 				Object.keys(suits).forEach((suit) => {
 					array.push({
 						card: `${suit + i}`,
+						suit,
+						point: i,
 						isHoverHint: false,
 						styleObject: {
 							backgroundImage: `url(./F2E_W2_material/material/cards_background/${
@@ -387,21 +616,40 @@ const app = {
 			isShuffle.value = false;
 			status.code = "init";
 		};
-		// mouse hoveer
-		const hoverHint = (e) => {
-			//console.log(mouseArea.pack);
-			// record.card = packs[mouseArea.pack][mouseArea.packIndex].find(
-			// 	(item) => {
-			// 		item.card === e.target.id;
-			// 	}
-			// );
-			// console.log(record.card);
+		// mouse hover
+		const hoverHint = (e, isMouseEnter = true) => {
+			if (mouseArea.pack !== "final") {
+				document
+					.querySelectorAll(
+						`[data-acceptCardType='${e.target.dataset.type}']`
+					)
+					.forEach((elem) => {
+						if (isMouseEnter) {
+							elem.classList.add("hoverHint");
+						} else {
+							elem.classList.remove("hoverHint");
+						}
+					});
+			}
+		};
+		const hoverHintForFinal = (e, isMouseEnter = true) => {
+			const suit = Object.keys(suits).find(
+				(key) => suits[key] === e.target.classList[1]
+			);
+			document
+				.querySelectorAll(`[data-suit='${suit}']`)
+				.forEach((elem) => {
+					if (isMouseEnter) {
+						elem.classList.add("hoverHint");
+					} else {
+						elem.classList.remove("hoverHint");
+					}
+				});
 		};
 		// drag start
 		const dragStart = (e) => {
 			// drag with translate change, so temporily remove "transition" class
 			isTransition.value = false;
-			isDragging.value = true;
 			movingCardsArray.parent = "";
 			movingCardsArray.parentIndex = null;
 			movingCardsArray.indexes = [];
@@ -413,6 +661,9 @@ const app = {
 
 			// get cards which is movable
 			checkIsMovable(getAllNextCards(e.target));
+			if (movingCardsArray.indexes.length !== 0) {
+				isDragging.value = true;
+			}
 		};
 		// drag
 		const drag = (e) => {
@@ -433,91 +684,101 @@ const app = {
 		//drag end
 		const dragEnd = (e) => {
 			const { pack, packIndex } = mouseArea;
-			const packLength = packs[pack][packIndex].length;
-			const sourceType =
-				packs[movingCardsArray.parent][movingCardsArray.parentIndex][
-					movingCardsArray.indexes[0]
-				].type;
-			const sourceCard =
-				packs[movingCardsArray.parent][movingCardsArray.parentIndex][
-					movingCardsArray.indexes[0]
-				].card;
-			const sourcePoint = e.target.dataset.point - 0;
-			const sourceColor = e.target.dataset.color;
+			console.log("target: ", mouseArea);
+			console.log("source: ", movingCardsArray);
 
-			if (pack === "col") {
-				if (
-					packLength !== 0 &&
-					sourceType ===
-						packs[pack][packIndex][packLength - 1].acceptCardType &&
-					movingCardsArray.indexes.length <= maxLength.nonEmpty
-				) {
-					elementTransfer(
-						packs[pack][packIndex],
-						packs[movingCardsArray.parent][
-							movingCardsArray.parentIndex
-						]
-					);
+			if (pack && packIndex !== null && isDragging.value) {
+				const packLength = packs[pack][packIndex].length;
+				const sourceType =
+					packs[movingCardsArray.parent][
+						movingCardsArray.parentIndex
+					][movingCardsArray.indexes[0]].type;
+				const sourceCard =
+					packs[movingCardsArray.parent][
+						movingCardsArray.parentIndex
+					][movingCardsArray.indexes[0]].card;
+
+				if (pack === "col") {
+					if (
+						packLength !== 0 &&
+						sourceType ===
+							packs[pack][packIndex][packLength - 1]
+								.acceptCardType &&
+						movingCardsArray.indexes.length <= maxLength.nonEmpty
+					) {
+						elementTransfer(
+							packs[pack][packIndex],
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					} else if (
+						packLength === 0 &&
+						movingCardsArray.indexes.length <= maxLength.empty
+					) {
+						elementTransfer(
+							packs[pack][packIndex],
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					} else {
+						cardReturnBack(
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					}
 				} else if (
-					packLength === 0 &&
-					movingCardsArray.indexes.length <= maxLength.empty
+					pack === "temp" &&
+					movingCardsArray.indexes.length === 1
 				) {
-					elementTransfer(
-						packs[pack][packIndex],
-						packs[movingCardsArray.parent][
-							movingCardsArray.parentIndex
-						]
-					);
-				} else {
-					cardReturnBack(
-						packs[movingCardsArray.parent][
-							movingCardsArray.parentIndex
-						]
-					);
-				}
-			} else if (
-				pack === "temp" &&
-				movingCardsArray.indexes.length === 1
-			) {
-				if (packs.temp[packIndex].length === 0) {
-					elementTransfer(
-						packs[pack][packIndex],
-						packs[movingCardsArray.parent][
-							movingCardsArray.parentIndex
-						]
-					);
-				} else {
-					cardReturnBack(
-						packs[movingCardsArray.parent][
-							movingCardsArray.parentIndex
-						]
-					);
-				}
-			} else if (
-				pack === "final" &&
-				movingCardsArray.indexes.length === 1
-			) {
-				if (
-					packLength !== 0 &&
-					sourceCard ===
-						packs[pack][packIndex][packLength - 1].acceptCard
-				) {
-					elementTransfer(
-						packs[pack][packIndex],
-						packs[movingCardsArray.parent][
-							movingCardsArray.parentIndex
-						]
-					);
+					if (packs.temp[packIndex].length === 0) {
+						elementTransfer(
+							packs[pack][packIndex],
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					} else {
+						cardReturnBack(
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					}
 				} else if (
-					packLength === 0 &&
-					sourceCard === Object.keys(suits)[packIndex] + 1
+					pack === "final" &&
+					movingCardsArray.indexes.length === 1
 				) {
-					elementTransfer(
-						packs[pack][packIndex],
-						packs[movingCardsArray.parent][
-							movingCardsArray.parentIndex
-						]
-					);
+					if (
+						packLength !== 0 &&
+						sourceCard ===
+							packs[pack][packIndex][packLength - 1].acceptCard
+					) {
+						elementTransfer(
+							packs[pack][packIndex],
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					} else if (
+						packLength === 0 &&
+						sourceCard === Object.keys(suits)[packIndex] + 1
+					) {
+						elementTransfer(
+							packs[pack][packIndex],
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					} else {
+						cardReturnBack(
+							packs[movingCardsArray.parent][
+								movingCardsArray.parentIndex
+							]
+						);
+					}
 				} else {
 					cardReturnBack(
 						packs[movingCardsArray.parent][
@@ -525,19 +786,30 @@ const app = {
 						]
 					);
 				}
-			} else {
-				cardReturnBack(
-					packs[movingCardsArray.parent][movingCardsArray.parentIndex]
-				);
 			}
-
-			isTransition.value = true;
-			isDragging.value = false;
 		};
 		// undo the steps
 		const undo = () => {
 			status.code = "inGame";
-			if (record.moves.length > 0) {
+			if (moves.value > 0) {
+				if (record.moves.length >= 2) {
+					while (record.moves.last.autoReturn) {
+						const lastAutoReturn = record.moves.last;
+						finalNum.value--;
+						elementTransfer(
+							packs[lastAutoReturn.source.parent][
+								lastAutoReturn.source.parentIndex
+							],
+							packs[lastAutoReturn.target.pack][
+								lastAutoReturn.target.packIndex
+							],
+							true,
+							false
+						);
+						console.log("Auto Return");
+					}
+				}
+
 				const lastStep = record.moves.last;
 				if (lastStep.target.pack === "final") {
 					finalNum.value--;
@@ -545,8 +817,10 @@ const app = {
 				elementTransfer(
 					packs[lastStep.source.parent][lastStep.source.parentIndex],
 					packs[lastStep.target.pack][lastStep.target.packIndex],
-					true
+					true,
+					false
 				);
+				console.log("Return");
 			}
 		};
 		// get hint
@@ -555,24 +829,33 @@ const app = {
 				hintIndex.value = hintArray.value[hintIndex.value]
 					? hintIndex.value
 					: 0;
-				const hintItem = hintArray.value[hintIndex.value];
-				hintItem.forEach((item) => {
-					if (item.card) {
-						packs[item.parent][item.index].last.isHoverHint = true;
+				const hintPair = hintArray.value[hintIndex.value];
+				hintPair.forEach((pair) => {
+					if (pair.items[0].card) {
+						pair.items.forEach((item, index) => {
+							const l = packs[pair.parent][pair.index].length - 1;
+							packs[pair.parent][pair.index][
+								l - index
+							].isHoverHint = true;
+						});
 					} else {
 						document
-							.getElementById(`${item.parent + (item.index + 1)}`)
+							.getElementById(`${pair.parent + (pair.index + 1)}`)
 							.firstElementChild.classList.add("hoverHint");
 					}
 					setTimeout(() => {
-						if (item.card) {
-							packs[item.parent][
-								item.index
-							].last.isHoverHint = false;
+						if (pair.items[0].card) {
+							pair.items.forEach((item, index) => {
+								const l =
+									packs[pair.parent][pair.index].length - 1;
+								packs[pair.parent][pair.index][
+									l - index
+								].isHoverHint = false;
+							});
 						} else {
 							document
 								.getElementById(
-									`${item.parent + (item.index + 1)}`
+									`${pair.parent + (pair.index + 1)}`
 								)
 								.firstElementChild.classList.remove(
 									"hoverHint"
@@ -693,6 +976,9 @@ const app = {
 				} else {
 					clearInterval(shuffler);
 					status.code = "inGame";
+					setTimeout(() => {
+						getHintArray();
+					}, shuffleSpeed + 200);
 				}
 				index++;
 			}, shuffleSpeed);
@@ -765,7 +1051,7 @@ const app = {
 			},
 		};
 		// used in cardsDistributing to determine shuffle speed and set by default
-		const shuffleSpeed = 10;
+		const shuffleSpeed = 50;
 		// used in cardsDistributing to play distributing animation and set by default
 		let shuffler = null;
 		// used when status.code changes and set by default
@@ -837,10 +1123,6 @@ const app = {
 				}
 			}
 		);
-		// packs -->  maxLength
-		watch(packs, (newPacks, oldPacks) => {
-			getMaxLength();
-		});
 		// time  -->  minute, second
 		watch(time, (newTime, oldTime) => {
 			if (newTime !== 0) {
@@ -859,8 +1141,8 @@ const app = {
 		});
 		// finalNum  -->  status.code = "win"
 		watch(finalNum, (newVal, oldVal) => {
-			//console.log("new final num: ", newVal);
-			//console.log("old final num: ", oldVal);
+			console.log("new final num: ", newVal);
+			console.log("old final num: ", oldVal);
 			if (newVal === 52) {
 				status.code = "win";
 			}
@@ -877,8 +1159,6 @@ const app = {
 		onBeforeMount(() => {
 			// shuffles cards and distributes before mounted
 			initCardsPack();
-			// get hibt array
-			getHintArray();
 		});
 		onMounted(() => {
 			//.......
@@ -915,6 +1195,7 @@ const app = {
 			restartHandler,
 			closeHandler,
 			hoverHint,
+			hoverHintForFinal,
 			dragStart,
 			drag,
 			dragEnd,

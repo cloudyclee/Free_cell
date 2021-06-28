@@ -129,6 +129,8 @@ html, body {
 
 .top .tempSpace .temp .space_card {
   outline: 1px solid transparent;
+  width: 95px;
+  height: 145px;
   -webkit-transition: 0.3s;
   transition: 0.3s;
 }
@@ -170,6 +172,8 @@ html, body {
   outline: 1px solid transparent;
   -webkit-transition: 0.3s;
   transition: 0.3s;
+  width: 95px;
+  height: 145px;
 }
 
 .top .finalSpace .final .space_card.hoverHint {

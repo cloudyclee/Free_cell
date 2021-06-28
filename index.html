@@ -24,7 +24,9 @@
                     <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card"
                         :style="item.styleObject"
                         :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]"
-                        @mousedown="dragStart($event)" @mousemove="drag($event)" @mouseup="dragEnd($event)">
+                        :data-type="item.type" :data-acceptCardType="item.acceptCardType" :data-suit="item.suit"
+                        @mousedown="dragStart($event)" @mousemove="drag($event)" @mouseup="dragEnd($event)"
+                        @mouseenter="hoverHint($event)" @mouseleave="hoverHint($event, false)">
                     </div>
                 </div>
             </div>
@@ -35,10 +37,12 @@
             </div>
             <div class="finalSpace">
                 <div v-for="(elem,index) in packs.final" :key="elem" :ref="setFinalRef" :id="`final${index+1}`"
-                    class="final" :class="[Object.values(suits)[index]]">
+                    class="final" :class="[Object.values(suits)[index]]" @mouseenter="hoverHintForFinal($event)"
+                    @mouseleave="hoverHintForFinal($event, false)">
                     <div class="space_card"></div>
                     <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card"
-                        :style="item.styleObject"
+                        :style="item.styleObject" :data-acceptCardType="item.acceptCardType"
+                        :acceptCard="item.acceptCard"
                         :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]">
                     </div>
                 </div>
@@ -48,9 +52,10 @@
             <div v-for="(elem, index) in packs.col" :key="elem" :ref="setColRef" :id="`col${index+1}`" class="col">
                 <div class="space_card"></div>
                 <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card" :style="item.styleObject"
-                    :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]"
-                    @mousedown="dragStart($event)" @mousemove="drag($event)" @mouseup="dragEnd($event)"
-                    @mouseenter="hoverHint($event)">
+                    :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]" :data-type="item.type"
+                    :data-acceptCardType="item.acceptCardType" :data-suit="item.suit" @mousedown="dragStart($event)"
+                    @mousemove="drag($event)" @mouseup="dragEnd($event)" @mouseenter="hoverHint($event)"
+                    @mouseleave="hoverHint($event, false)">
                 </div>
             </div>
         </div>
