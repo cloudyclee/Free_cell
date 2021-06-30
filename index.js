@@ -31,6 +31,52 @@ const app = {
 
 		// 1. Variables to be set and watched
 
+		// set by getHintArray
+		const hintArray = ref([]);
+		// set by getHintArray
+		const hintArrayLength = ref(0);
+		// set by getHintArray, hint
+		const hintIndex = ref(0);
+		// set by timer
+		const time = ref(0);
+
+		// set by dragStart, dragEnd
+		const isDragging = ref(false);
+		//
+		const isLoading = ref(true);
+		// set by startNewGame, restartCurrentGame
+		const isShuffle = ref(true);
+		// set by cardsDistibuting, dragStart, dragEnd
+		const isTransition = ref(false);
+		// set by getMaxLength and recalculate while packs.temp or packs.col changes
+
+		const maxLength = reactive({ empty: 0, nonEmpty: 0 });
+		// set by getArea
+		const mouseArea = reactive({ pack: "", packIndex: null });
+		// parent: set by checkIsMovable
+		// parentIndex: set by checkIsMovable
+		// indexes: set by checkIsMovable
+		const movingCardsArray = reactive({
+			parent: "",
+			parentIndex: null,
+			indexes: [],
+		});
+		// set by initCardsPack, elementTransfer
+		const packs = reactive({
+			temp: [[], [], [], []],
+			final: [[], [], [], []],
+			col: [[], [], [], [], [], [], [], []],
+			moving: [],
+		});
+		// moves: set by elementTransfer
+		// mouse: set by getArea
+		// position: set by dragStart
+		const record = reactive({
+			moves: [],
+			mouse: [],
+			position: {},
+			cardPosition: {},
+		});
 		// status.code
 		//// init: set by startNewGame, restartCurrentGame
 		//// inGame: set by cardsDistributing, closeHandler
@@ -43,68 +89,230 @@ const app = {
 			code: "init",
 			info: {},
 		});
-		// set by initCardsPack, elementTransfer
-		const packs = reactive({
-			temp: [[], [], [], []],
-			final: [[], [], [], []],
-			col: [[], [], [], [], [], [], [], []],
-			moving: [],
-		});
-		// set by timer
-		const time = ref(0);
-		// set by cardsDistibuting, dragStart, dragEnd
-		const isTransition = ref(false);
-		// set by dragStart, dragEnd
-		const isDragging = ref(false);
-		// set by startNewGame, restartCurrentGame
-		const isShuffle = ref(true);
-		// set by getMaxLength and recalculate while packs.temp or packs.col changes
-		const maxLength = reactive({ empty: 0, nonEmpty: 0 });
-		// set by getArea
-		const mouseArea = reactive({ pack: "", packIndex: null });
-		// moves: set by elementTransfer
-		// mouse: set by getArea
-		// position: set by dragStart
-		// card: ???
-		const record = reactive({
-			moves: [],
-			mouse: [],
-			position: [],
-			card: null,
-		});
-		// parent: set by checkIsMovable
-		// parentIndex: set by checkIsMovable
-		// indexes: set by checkIsMovable
-		const movingCardsArray = reactive({
-			parent: "",
-			parentIndex: null,
-			indexes: [],
-		});
-		// set by getHintArray
-		const hintArray = ref([]);
-		// set by getHintArray
-		const hintArrayLength = ref(0);
-		// set by getHintArray, hint
-		const hintIndex = ref(0);
 
 		// 2. Variables which changes with other varibales change
 
+		// when packs.final changes
+		const finalNum = ref(0);
+		// when item in packs is transfered (elementTransfer in dragEnd and undo)
+		const moves = ref(0);
 		// when time changes
 		const minute = ref(0);
 		const second = ref(0);
-		// when item in packs is transfered (elementTransfer in dragEnd and undo)
-		const moves = ref(0);
-		// when packs.final changes
-		const finalNum = ref(0);
 
 		// 4. Functions which used in other functions
 
-		// used in initCardsPack to execute cards shuffling
-		const shuffle = (array) => {
-			for (let i = array.length - 1; i > 0; i--) {
-				let j = Math.floor(Math.random() * (i + 1));
-				[array[i], array[j]] = [array[j], array[i]];
+		// used in dragEnd to delete card's tranform
+		const cardReturnBack = (
+			cardPack,
+			offset = { offsetX: 0, offsetY: 0 }
+		) => {
+			const tl = cardPack.length;
+			const ml = movingCardsArray.indexes.length;
+			const { offsetX, offsetY } = offset;
+
+			isTransition.value = true;
+			isDragging.value = false;
+
+			if (tl !== 0) {
+				movingCardsArray.indexes.forEach((item, index) => {
+					cardPack[
+						tl - ml + index
+					].styleObject.transform = `translate(${
+						offsetX +
+						0.5 *
+							(movingCardsArray.parent === "final" ||
+								packs[mouseArea.pack][mouseArea.packIndex]
+									.length === 0)
+					}px, ${
+						offsetY -
+						75 * (mouseArea.pack === "col") +
+						0.5 *
+							(movingCardsArray.parent === "final" ||
+								packs[mouseArea.pack][mouseArea.packIndex]
+									.length === 0)
+					}px)`;
+					// for those cards which move not through drag event
+					cardPack[tl - ml + index].styleObject.zIndex = `${
+						time.value + 11
+					}`;
+					setTimeout(() => {
+						cardPack[tl - ml + index].styleObject.transform =
+							"translate(0px, 0px)";
+						//delete cardPack[tl - ml + index].styleObject.transform;
+					}, 50);
+				});
 			}
+		};
+		// used in dragStart to check which cards to set movingCardsArray
+		const checkIsMovable = (cardsArray) => {
+			const l = cardsArray.indexes.length;
+			movingCardsArray.parent = cardsArray.parent;
+			movingCardsArray.parentIndex = cardsArray.parentIndex;
+			movingCardsArray.indexes.push(cardsArray.indexes[0]);
+
+			for (let i = 0; i < l; i++) {
+				const p = cardsArray.indexes[i];
+				const previousCard =
+					packs[cardsArray.parent][cardsArray.parentIndex][p];
+				const nextCard =
+					packs[cardsArray.parent][cardsArray.parentIndex][p + 1];
+
+				if (nextCard) {
+					const type = previousCard.acceptCardType;
+					const nextCardType = nextCard.type;
+					if (type === nextCardType) {
+						movingCardsArray.indexes.push(
+							cardsArray.indexes[i + 1]
+						);
+					}
+				}
+			}
+
+			if (l !== 1 && movingCardsArray.indexes.length !== l) {
+				movingCardsArray.parent = "";
+				movingCardsArray.parentIndex = null;
+				movingCardsArray.indexes = [];
+			}
+		};
+		// used in dragEnd and undo to transfer card object in packs
+		const elementTransfer = (
+			targetPack,
+			sourcePack,
+			isUndo = false,
+			autoReturn = false
+		) => {
+			const sourceCardId =
+				packs[movingCardsArray.parent][movingCardsArray.parentIndex][
+					movingCardsArray.indexes[0]
+				].card;
+			const targetCardId =
+				mouseArea.pack === "col" &&
+				packs[mouseArea.pack][mouseArea.packIndex].last
+					? packs[mouseArea.pack][mouseArea.packIndex].last.card
+					: null;
+			const source = document.querySelector(`#${sourceCardId}`);
+			const target = targetCardId
+				? document.querySelector(`#${targetCardId}`)
+				: document.querySelector(
+						`#${mouseArea.pack + (mouseArea.packIndex + 1)}`
+				  );
+			const offsetX =
+				source.getBoundingClientRect().left -
+				target.getBoundingClientRect().left;
+			const offsetY = targetCardId
+				? source.getBoundingClientRect().top -
+				  target.getBoundingClientRect().top +
+				  35
+				: source.getBoundingClientRect().top -
+				  target.getBoundingClientRect().top;
+			const offset = { offsetX, offsetY };
+
+			const sliceLength = movingCardsArray.indexes.length;
+			const movingCardsPack = sourcePack.slice(-sliceLength);
+			sourcePack.splice(-sliceLength, sliceLength);
+			targetPack.push(...movingCardsPack);
+			cardReturnBack(targetPack, offset);
+			getMaxLength();
+			if (mouseArea.pack === "final") {
+				finalNum.value++;
+			}
+
+			if (!isUndo) {
+				const { pack, packIndex } = mouseArea;
+				const { parent, parentIndex } = movingCardsArray;
+				const length = movingCardsArray.indexes.length;
+				record.moves.push({
+					target: { pack, packIndex },
+					source: { parent, parentIndex },
+					length,
+					autoReturn,
+				});
+				if (!autoReturn) {
+					moves.value++;
+					getHintArray();
+				}
+			} else {
+				if (record.moves.last && !record.moves.last.autoReturn) {
+					moves.value--;
+					getHintArray();
+				}
+				record.moves.pop();
+			}
+		};
+		// used in dragStart to get all cards behind a card
+		const getAllNextCards = (elem) => {
+			let nexts = { parent: "", parentIndex: null, indexes: [] };
+			const id = elem.id;
+			[nexts.parent, nexts.parentIndex] =
+				elem.parentElement.id.split(/(\d+)/);
+			nexts.parentIndex = nexts.parentIndex - 0 - 1;
+			let cardIndex = packs[nexts.parent][nexts.parentIndex].findIndex(
+				(item) => item.card === id
+			);
+			const packLength = packs[nexts.parent][nexts.parentIndex].length;
+
+			while (cardIndex < packLength) {
+				nexts.indexes.push(cardIndex);
+				cardIndex++;
+			}
+			return nexts;
+		};
+		// used in drag to get mouse target pack
+		const getArea = (e) => {
+			record.mouse.push({ x: e.pageX, y: e.pageY });
+
+			if (
+				record.mouse.last.x > boundaries.leftHorizontal &&
+				record.mouse.last.x < boundaries.rightHorizontal
+			) {
+				if (record.mouse.last.y > boundaries.vertical) {
+					mouseArea.pack = "col";
+					mouseArea.packIndex = getAreaIndex(
+						packs.temp.length + packs.final.length,
+						packs.col.length,
+						boundaries.rightHorizontal
+					);
+				} else if (record.mouse.last.x < boundaries.topLeftHorizontal) {
+					mouseArea.pack = "temp";
+					mouseArea.packIndex = getAreaIndex(
+						0,
+						packs.temp.length,
+						boundaries.topLeftHorizontal
+					);
+				} else if (
+					record.mouse.last.x > boundaries.topRightHorizontal
+				) {
+					mouseArea.pack = "final";
+					mouseArea.packIndex = getAreaIndex(
+						packs.temp.length,
+						packs.final.length,
+						boundaries.rightHorizontal
+					);
+				} else {
+					mouseArea.pack = null;
+					mouseArea.packIndex = null;
+				}
+			} else {
+				mouseArea.pack = null;
+				mouseArea.packIndex = null;
+			}
+		};
+		// used in getArea to get which pack is to be pushed into cards
+		const getAreaIndex = (indexCount, indexLength, limitBoundary) => {
+			let packIndex = indexCount;
+			while (
+				record.mouse.last.x >
+				(packIndex < indexCount + indexLength - 1
+					? dropPosition[packIndex].right / 2 +
+					  dropPosition[packIndex + 1].left / 2
+					: limitBoundary)
+			) {
+				packIndex++;
+			}
+
+			packIndex -= indexCount;
+			return packIndex;
 		};
 		// used in getBoundary to get left, top, right, bottom of an element
 		const getElementRange = (elem) => {
@@ -222,10 +430,45 @@ const app = {
 								hintSource.items[0].card ===
 									hintTarget.items[0].acceptCard
 							) {
-								console.log("ht: ", hintTarget);
-								console.log("hs: ", hintSource);
-								// if cards of point 2 in temp space
-								if (hintSource.items[0].point === 2) {
+								// if accept card type of a card is not in col or temp space
+								// then can go back to the final
+								let findTempsCard;
+								let findColsCard;
+								let findCards;
+								for (
+									let i = 0;
+									i < packs.temp.length + packs.col.length;
+									i++
+								) {
+									if (i < packs.temp.length) {
+										findTempsCard = packs.temp[i].find(
+											(item) =>
+												item.type ===
+												hintSource.items[0]
+													.acceptCardType
+										);
+										if (findTempsCard) {
+											findCards = true;
+										}
+									} else {
+										findColsCard = packs.col[i - 4].find(
+											(item) =>
+												item.type ===
+												hintSource.items[0]
+													.acceptCardType
+										);
+										if (findColsCard) {
+											findCards = true;
+										}
+									}
+								}
+
+								// if both don't exist, move the source card
+								if (
+									!findCards ||
+									hintSource.items[0].point === 2
+								) {
+									getHint = true;
 									// set moving cards array
 									movingCardsArray.parent = hintSource.parent;
 									movingCardsArray.parentIndex =
@@ -249,7 +492,7 @@ const app = {
 										false,
 										true
 									);
-									// or other cards can move to final space
+									// or one of them exists, push it into hint array
 								} else {
 									hintArray.value.push([
 										hintSource,
@@ -280,13 +523,39 @@ const app = {
 							hintSource.items[0].card ===
 								hintTarget.items[0].acceptCard
 						) {
-							console.log("ht: ", hintTarget);
-							console.log("hs: ", hintSource);
-							// if cards of ace or of point 2 is the last card of the column
-							if (
-								hintSource.items[0].point === 1 ||
-								hintSource.items[0].point === 2
+							// if accept card type of a card is not in col or temp space
+							// then can go back to the final
+							let findTempsCard;
+							let findColsCard;
+							let findCards;
+							for (
+								let i = 0;
+								i < packs.temp.length + packs.col.length;
+								i++
 							) {
+								if (i < packs.temp.length) {
+									findTempsCard = packs.temp[i].find(
+										(item) =>
+											item.type ===
+											hintSource.items[0].acceptCardType
+									);
+									if (findTempsCard) {
+										findCards = true;
+									}
+								} else {
+									findColsCard = packs.col[i - 4].find(
+										(item) =>
+											item.type ===
+											hintSource.items[0].acceptCardType
+									);
+									if (findColsCard) {
+										findCards = true;
+									}
+								}
+							}
+
+							// if both don't exist, move the source card
+							if (!findCards || hintSource.items[0].point === 2) {
 								getHint = true;
 								// set moving cards array
 								movingCardsArray.parent = hintSource.parent;
@@ -304,7 +573,7 @@ const app = {
 									false,
 									true
 								);
-								// or other cards that can move to final space
+								// or one of them exists, push it into hint array
 							} else {
 								// first deep copy the object
 								// otherwise slice items would affect the orginal one
@@ -357,7 +626,6 @@ const app = {
 										"All" &&
 									subSource.length <= maxLength.empty
 								) {
-									console.log("hihi");
 									hintArray.value.push([
 										subPotentialHint,
 										hintTarget,
@@ -385,178 +653,21 @@ const app = {
 			});
 
 			if (getHint) {
-				getHintArray();
+				setTimeout(() => {
+					getHintArray();
+				}, 500);
 			}
 			// set length of hint array
 			hintArrayLength.value = hintArray.value.length;
 			// set hint array index value
 			hintIndex.value = 0;
-			console.log("hint: ", hintArray.value);
 		};
-		// used in dragStart to get all cards behind a card
-		const getAllNextCards = (elem) => {
-			let nexts = { parent: "", parentIndex: null, indexes: [] };
-			const id = elem.id;
-			[nexts.parent, nexts.parentIndex] =
-				elem.parentElement.id.split(/(\d+)/);
-			nexts.parentIndex = nexts.parentIndex - 0 - 1;
-			let cardIndex = packs[nexts.parent][nexts.parentIndex].findIndex(
-				(item) => item.card === id
-			);
-			const packLength = packs[nexts.parent][nexts.parentIndex].length;
-
-			while (cardIndex < packLength) {
-				nexts.indexes.push(cardIndex);
-				cardIndex++;
+		// used in initCardsPack to execute cards shuffling
+		const shuffle = (array) => {
+			for (let i = array.length - 1; i > 0; i--) {
+				let j = Math.floor(Math.random() * (i + 1));
+				[array[i], array[j]] = [array[j], array[i]];
 			}
-			return nexts;
-		};
-		// used in dragStart to check which cards to set movingCardsArray
-		const checkIsMovable = (cardsArray) => {
-			const l = cardsArray.indexes.length;
-			movingCardsArray.parent = cardsArray.parent;
-			movingCardsArray.parentIndex = cardsArray.parentIndex;
-			movingCardsArray.indexes.push(cardsArray.indexes[0]);
-
-			for (let i = 0; i < l; i++) {
-				const p = cardsArray.indexes[i];
-				const previousCard =
-					packs[cardsArray.parent][cardsArray.parentIndex][p];
-				const nextCard =
-					packs[cardsArray.parent][cardsArray.parentIndex][p + 1];
-
-				if (nextCard) {
-					const type = previousCard.acceptCardType;
-					const nextCardType = nextCard.type;
-					if (type === nextCardType) {
-						movingCardsArray.indexes.push(
-							cardsArray.indexes[i + 1]
-						);
-					}
-				}
-			}
-
-			if (l !== 1 && movingCardsArray.indexes.length !== l) {
-				movingCardsArray.parent = "";
-				movingCardsArray.parentIndex = null;
-				movingCardsArray.indexes = [];
-			}
-		};
-		// used in getArea to get which pack is to be pushed into cards
-		const getAreaIndex = (indexCount, indexLength, limitBoundary) => {
-			let packIndex = indexCount;
-			while (
-				record.mouse.last.x >
-				(packIndex < indexCount + indexLength - 1
-					? dropPosition[packIndex].right / 2 +
-					  dropPosition[packIndex + 1].left / 2
-					: limitBoundary)
-			) {
-				packIndex++;
-			}
-
-			packIndex -= indexCount;
-			return packIndex;
-		};
-		// used in drag to get mouse target pack
-		const getArea = (e) => {
-			record.mouse.push({ x: e.pageX, y: e.pageY });
-
-			if (
-				record.mouse.last.x > boundaries.leftHorizontal &&
-				record.mouse.last.x < boundaries.rightHorizontal
-			) {
-				if (record.mouse.last.y > boundaries.vertical) {
-					mouseArea.pack = "col";
-					mouseArea.packIndex = getAreaIndex(
-						packs.temp.length + packs.final.length,
-						packs.col.length,
-						boundaries.rightHorizontal
-					);
-				} else if (record.mouse.last.x < boundaries.topLeftHorizontal) {
-					mouseArea.pack = "temp";
-					mouseArea.packIndex = getAreaIndex(
-						0,
-						packs.temp.length,
-						boundaries.topLeftHorizontal
-					);
-				} else if (
-					record.mouse.last.x > boundaries.topRightHorizontal
-				) {
-					mouseArea.pack = "final";
-					mouseArea.packIndex = getAreaIndex(
-						packs.temp.length,
-						packs.final.length,
-						boundaries.rightHorizontal
-					);
-				} else {
-					mouseArea.pack = null;
-					mouseArea.packIndex = null;
-				}
-			} else {
-				mouseArea.pack = null;
-				mouseArea.packIndex = null;
-			}
-		};
-		// used in dragEnd and undo to transfer card object in packs
-		const elementTransfer = (
-			targetPack,
-			sourcePack,
-			isUndo = false,
-			autoReturn = false
-		) => {
-			const sliceLength = movingCardsArray.indexes.length;
-			const movingCardsPack = sourcePack.slice(-sliceLength);
-			sourcePack.splice(-sliceLength, sliceLength);
-			targetPack.push(...movingCardsPack);
-			cardReturnBack(targetPack);
-			getMaxLength();
-			if (mouseArea.pack === "final") {
-				finalNum.value++;
-			}
-
-			if (!isUndo) {
-				const { pack, packIndex } = mouseArea;
-				const { parent, parentIndex } = movingCardsArray;
-				const length = movingCardsArray.indexes.length;
-				record.moves.push({
-					target: { pack, packIndex },
-					source: { parent, parentIndex },
-					length,
-					autoReturn,
-				});
-				if (!autoReturn) {
-					moves.value++;
-					getHintArray();
-				}
-
-				console.log("record: ", record.moves);
-				console.log("-----------------------");
-			} else {
-				if (record.moves.last && !record.moves.last.autoReturn) {
-					moves.value--;
-					getHintArray();
-				}
-				record.moves.pop();
-				console.log("record: ", record.moves);
-				console.log("----- THis is Undo ----");
-			}
-		};
-		// used in dragEnd to delete card's tranform
-		const cardReturnBack = (cardPack) => {
-			const tl = cardPack.length;
-			const ml = movingCardsArray.indexes.length;
-			if (tl !== 0) {
-				movingCardsArray.indexes.forEach((item, index) => {
-					cardPack[tl - ml + index].styleObject.transform =
-						"translate(0px, 0px)";
-					cardPack[tl - ml + index].styleObject.zIndex = 10;
-					//delete cardPack[tl - ml + index].styleObject.transform;
-				});
-			}
-
-			isTransition.value = true;
-			isDragging.value = false;
 		};
 
 		// 5. Functionality
@@ -594,57 +705,9 @@ const app = {
 		};
 
 		// 5-2 statement for render
-		// set game status to "new"
-		const newGameHandler = () => {
-			status.code = "new";
-		};
-		// set game status to "restart"
-		const restartHandler = () => {
-			status.code = "restart";
-		};
 		// set game status to "inGame"
 		const closeHandler = () => {
 			status.code = "inGame";
-		};
-		// set game status to "init" and isShuffle to true
-		const startNewGame = () => {
-			isShuffle.value = true;
-			status.code = "init";
-		};
-		// set game status to "init" and isShuffle to false
-		const restartCurrentGame = () => {
-			isShuffle.value = false;
-			status.code = "init";
-		};
-		// mouse hover
-		const hoverHint = (e, isMouseEnter = true) => {
-			if (mouseArea.pack !== "final") {
-				document
-					.querySelectorAll(
-						`[data-acceptCardType='${e.target.dataset.type}']`
-					)
-					.forEach((elem) => {
-						if (isMouseEnter) {
-							elem.classList.add("hoverHint");
-						} else {
-							elem.classList.remove("hoverHint");
-						}
-					});
-			}
-		};
-		const hoverHintForFinal = (e, isMouseEnter = true) => {
-			const suit = Object.keys(suits).find(
-				(key) => suits[key] === e.target.classList[1]
-			);
-			document
-				.querySelectorAll(`[data-suit='${suit}']`)
-				.forEach((elem) => {
-					if (isMouseEnter) {
-						elem.classList.add("hoverHint");
-					} else {
-						elem.classList.remove("hoverHint");
-					}
-				});
 		};
 		// drag start
 		const dragStart = (e) => {
@@ -677,16 +740,15 @@ const app = {
 					}px, ${record.mouse.last.y - record.position.y}px)`;
 					packs[movingCardsArray.parent][
 						movingCardsArray.parentIndex
-					][item].styleObject.zIndex = 999;
+					][item].styleObject.zIndex = `${time.value + 11}`;
 				});
 			}
 		};
 		//drag end
 		const dragEnd = (e) => {
 			const { pack, packIndex } = mouseArea;
-			console.log("target: ", mouseArea);
-			console.log("source: ", movingCardsArray);
 
+			// check cards is movable
 			if (pack && packIndex !== null && isDragging.value) {
 				const packLength = packs[pack][packIndex].length;
 				const sourceType =
@@ -788,41 +850,6 @@ const app = {
 				}
 			}
 		};
-		// undo the steps
-		const undo = () => {
-			status.code = "inGame";
-			if (moves.value > 0) {
-				if (record.moves.length >= 2) {
-					while (record.moves.last.autoReturn) {
-						const lastAutoReturn = record.moves.last;
-						finalNum.value--;
-						elementTransfer(
-							packs[lastAutoReturn.source.parent][
-								lastAutoReturn.source.parentIndex
-							],
-							packs[lastAutoReturn.target.pack][
-								lastAutoReturn.target.packIndex
-							],
-							true,
-							false
-						);
-						console.log("Auto Return");
-					}
-				}
-
-				const lastStep = record.moves.last;
-				if (lastStep.target.pack === "final") {
-					finalNum.value--;
-				}
-				elementTransfer(
-					packs[lastStep.source.parent][lastStep.source.parentIndex],
-					packs[lastStep.target.pack][lastStep.target.packIndex],
-					true,
-					false
-				);
-				console.log("Return");
-			}
-		};
 		// get hint
 		const hint = () => {
 			if (hintArrayLength.value > 0) {
@@ -866,62 +893,98 @@ const app = {
 				hintIndex.value++;
 			}
 		};
-
-		// 5-3 statement not for render
-		// function to set packs
-		const initCardsPack = () => {
-			// shuffle...
-			if (isShuffle.value) {
-				shuffle(cardsForShuffle.value);
+		// mouse hover
+		const hoverHint = (e, isMouseEnter = true) => {
+			if (mouseArea.pack !== "final") {
+				document
+					.querySelectorAll(
+						`[data-acceptCardType='${e.target.dataset.type}']`
+					)
+					.forEach((elem) => {
+						if (isMouseEnter) {
+							elem.classList.add("hoverHint");
+						} else {
+							elem.classList.remove("hoverHint");
+						}
+					});
 			}
-
-			// distribute cards
-			let j = 0;
-			for (let i = 0; i < cardsForShuffle.value.length; i++) {
-				if (i < 28) {
-					if (packs.col[j].length < 7) {
-						packs.col[j].push(cardsForShuffle.value[i]);
+		};
+		const hoverHintForFinal = (e, isMouseEnter = true) => {
+			const suit = Object.keys(suits).find(
+				(key) => suits[key] === e.target.classList[1]
+			);
+			document
+				.querySelectorAll(`[data-suit='${suit}']`)
+				.forEach((elem) => {
+					if (isMouseEnter) {
+						elem.classList.add("hoverHint");
 					} else {
-						j++;
-						packs.col[j].push(cardsForShuffle.value[i]);
+						elem.classList.remove("hoverHint");
 					}
-				} else {
-					if (packs.col[j].length < 6) {
-						packs.col[j].push(cardsForShuffle.value[i]);
-					} else {
-						j++;
-						packs.col[j].push(cardsForShuffle.value[i]);
-					}
+				});
+		};
+		// set game status to "new"
+		const newGameHandler = () => {
+			status.code = "new";
+		};
+		// set game status to "restart"
+		const restartHandler = () => {
+			status.code = "restart";
+		};
+		// set game status to "init" and isShuffle to false
+		const restartCurrentGame = () => {
+			isShuffle.value = false;
+			status.code = "init";
+		};
+		// set game status to "init" and isShuffle to true
+		const startNewGame = () => {
+			isShuffle.value = true;
+			status.code = "init";
+		};
+		// undo the steps
+		const undo = () => {
+			status.code = "inGame";
+			if (moves.value > 0) {
+				const lastStep = record.moves.last;
+				let doAgain = lastStep.autoReturn;
+				// set movingCardsArray and mouseArea
+				movingCardsArray.parent = lastStep.target.pack;
+				movingCardsArray.parentIndex = lastStep.target.packIndex;
+				movingCardsArray.indexes = [];
+				mouseArea.pack = lastStep.source.parent;
+				mouseArea.packIndex = lastStep.source.parentIndex;
+				for (let i = 0; i < lastStep.length; i++) {
+					movingCardsArray.indexes.push(
+						packs[movingCardsArray.parent][
+							movingCardsArray.parentIndex
+						].length -
+							lastStep.length +
+							i
+					);
+				}
+				if (lastStep.target.pack === "final") {
+					finalNum.value--;
+				}
+				elementTransfer(
+					packs[lastStep.source.parent][lastStep.source.parentIndex],
+					packs[lastStep.target.pack][lastStep.target.packIndex],
+					true,
+					false
+				);
+				if (doAgain) {
+					setTimeout(() => {
+						undo();
+					}, 500);
 				}
 			}
 		};
-		// function to set maxLength
-		const getMaxLength = () => {
-			const emptyTemp = packs.temp.filter((item) => item.length === 0);
-			const emptyCol = packs.col.filter((item) => item.length === 0);
-			maxLength.nonEmpty = (emptyTemp.length + 1) * (emptyCol.length + 1);
-			maxLength.empty = (emptyTemp.length + 1) * emptyCol.length;
-		};
-		// function to set dropPosition and boundaries
-		const getBoundary = () => {
-			dropArea.forEach((item) => {
-				item.value.forEach((subItem) => {
-					dropPosition.push(getElementRange(subItem));
-				});
-			});
 
-			// set boundaries
-			boundaries.vertical =
-				(dropPosition[0].bottom + dropPosition[8].top) / 2;
-			boundaries.leftHorizontal = dropPosition[8].left - 20;
-			boundaries.rightHorizontal = dropPosition[15].right + 20;
-			boundaries.topLeftHorizontal = dropPosition[3].right + 20;
-			boundaries.topRightHorizontal = dropPosition[4].left - 20;
-		};
+		// 5-3 statement not for render
 		// function to set shuffler and to distribute cards
 		const cardsDistributing = () => {
 			const ids = cardsForShuffle.value.map((item) => item.card); // get shuffle order
 			let index = 0;
+			isLoading.value = false;
 
 			// set cards invisible
 			cardsForShuffle.value.forEach((item) => {
@@ -938,12 +1001,6 @@ const app = {
 					const colIndex =
 						c < 28 ? parseInt(c / 7) : parseInt((c - 28) / 6) + 4;
 					const cardIndex = c < 28 ? c % 7 : (c - 28) % 6;
-					// const offsetX =
-					// 	finalRefs.value[mod].getBoundingClientRect().left -
-					// 	cardRefs.value[c].getBoundingClientRect().left;
-					// const offsetY =
-					// 	finalRefs.value[mod].getBoundingClientRect().top -
-					// 	cardRefs.value[c].getBoundingClientRect().top;
 					const offsetX =
 						finalRefs.value[mod].getBoundingClientRect().left -
 						document.getElementById(ids[c]).getBoundingClientRect()
@@ -978,10 +1035,63 @@ const app = {
 					status.code = "inGame";
 					setTimeout(() => {
 						getHintArray();
-					}, shuffleSpeed + 200);
+					}, 500);
 				}
 				index++;
 			}, shuffleSpeed);
+		};
+		// function to set dropPosition and boundaries
+		const getBoundary = () => {
+			dropPosition = [];
+			dropArea.forEach((item) => {
+				item.value.forEach((subItem) => {
+					dropPosition.push(getElementRange(subItem));
+				});
+			});
+
+			// set boundaries
+			boundaries.vertical =
+				(dropPosition[0].bottom + dropPosition[8].top) / 2;
+			boundaries.leftHorizontal = dropPosition[8].left - 20;
+			boundaries.rightHorizontal = dropPosition[15].right + 20;
+			boundaries.topLeftHorizontal = dropPosition[3].right + 20;
+			boundaries.topRightHorizontal = dropPosition[4].left - 20;
+		};
+		// function to set maxLength
+		const getMaxLength = () => {
+			const emptyTemp = packs.temp.filter((item) => item.length === 0);
+			const emptyCol = packs.col.filter((item) => item.length === 0);
+			maxLength.nonEmpty = (emptyTemp.length + 1) * (emptyCol.length + 1);
+			maxLength.empty = (emptyTemp.length + 1) * emptyCol.length;
+		};
+		// function to set packs
+		const initCardsPack = () => {
+			// shuffle...
+			if (isShuffle.value) {
+				shuffle(cardsForShuffle.value);
+			}
+
+			// distribute cards
+			let j = 0;
+			for (let i = 0; i < cardsForShuffle.value.length; i++) {
+				if (i < 28) {
+					if (packs.col[j].length < 7) {
+						packs.col[j].push(cardsForShuffle.value[i]);
+					} else {
+						j++;
+						packs.col[j].push(cardsForShuffle.value[i]);
+					}
+				} else {
+					if (packs.col[j].length < 6) {
+						packs.col[j].push(cardsForShuffle.value[i]);
+					} else {
+						j++;
+						packs.col[j].push(cardsForShuffle.value[i]);
+					}
+				}
+			}
+
+			getMaxLength();
 		};
 
 		// 6. Refs and set refs
@@ -1051,16 +1161,16 @@ const app = {
 			},
 		};
 		// used in cardsDistributing to determine shuffle speed and set by default
-		const shuffleSpeed = 50;
+		const shuffleSpeed = 30;
 		// used in cardsDistributing to play distributing animation and set by default
 		let shuffler = null;
 		// used when status.code changes and set by default
 		let timer = null;
-		// used in getBoundary to make dropPosition and set by default
-		const dropArea = [tempRefs, finalRefs, colRefs];
 		// used in getAreaIndex to determine which parent element to be dropped
 		// when mouse up and set by getBoundary
-		const dropPosition = [];
+		let dropPosition = [];
+		// used in getBoundary to make dropPosition and set by default
+		const dropArea = [tempRefs, finalRefs, colRefs];
 		// used in getArea and set by getBoundary
 		const boundaries = {
 			vertical: 0,
@@ -1078,6 +1188,18 @@ const app = {
 
 		// 8. watch function
 
+		// finalNum  -->  status.code = "win"
+		watch(finalNum, (newVal, oldVal) => {
+			if (newVal === 52) {
+				status.code = "win";
+			}
+		});
+		// hintArrayLength -->  status.code = "lose"
+		watch(hintArrayLength, (newVal, oldVal) => {
+			if (newVal === 0 && finalNum.value !== 52) {
+				status.code = "lose";
+			}
+		});
 		// status.code
 		watch(
 			() => status.code,
@@ -1111,13 +1233,14 @@ const app = {
 					record.moves = [];
 
 					// clean out packs
-					Object.values(packs).forEach((item) =>
-						item.forEach((subItem) => (subItem.length = 0))
-					);
+					Object.values(packs).forEach((item) => {
+						item.forEach((subItem) => {
+							subItem.length = 0;
+						});
+					});
 
 					initCardsPack();
 					cardsDistributing();
-					getHintArray();
 				} else {
 					status.info = statusInfo[status.code];
 				}
@@ -1139,20 +1262,6 @@ const app = {
 				second.value = 0;
 			}
 		});
-		// finalNum  -->  status.code = "win"
-		watch(finalNum, (newVal, oldVal) => {
-			console.log("new final num: ", newVal);
-			console.log("old final num: ", oldVal);
-			if (newVal === 52) {
-				status.code = "win";
-			}
-		});
-		// hintArrayLength -->  status.code = "lose"
-		watch(hintArrayLength, (newVal, oldVal) => {
-			if (newVal === 0 && finalNum.value !== 52) {
-				status.code = "lose";
-			}
-		});
 
 		// 9. Lifecycle functions
 
@@ -1163,6 +1272,7 @@ const app = {
 		onMounted(() => {
 			//.......
 			window.addEventListener("resize", getBoundary);
+			window.addEventListener("scroll", getBoundary);
 			// calculate elements' boundaries
 			getBoundary();
 			// play card distributing animation
@@ -1177,6 +1287,7 @@ const app = {
 		});
 
 		return {
+			isLoading,
 			minute,
 			second,
 			moves,

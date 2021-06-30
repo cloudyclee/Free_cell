@@ -11,11 +11,28 @@
         rel="stylesheet">
     <link rel="stylesheet" href="./dist/style.css">
     <title>Free Cell</title>
-
 </head>
 
 <body>
     <div class="container" id="app">
+        <div class="info">
+            <div class="stats">
+                <span class="info_space">
+                </span>
+                <span>TIME:</span>
+                <span id="time">{{ minute >= 10? minute : `0${minute}` }}:{{ second >= 10? second : `0${second}`
+                    }}</span>
+                <span>MOVES:</span>
+                <span id="moves">{{ moves }}</span>
+            </div>
+            <div class="functionButton">
+                <div id="newGame" @click="newGameHandler">NEW GAME</div>
+                <div id="restart" @click="restartHandler">RESTART</div>
+                <div id="hint" @click="hint">HINT</div>
+                <div id="undo" @click="undo">UNDO</div>
+            </div>
+        </div>
+        <hr>
         <div class="top">
             <div class="tempSpace">
                 <div v-for="(elem, index) in packs.temp" :key="elem" :ref="setTempRef" :id="`temp${index+1}`"
@@ -61,7 +78,8 @@
         </div>
         <div class="alert">
             <p>
-                <span>若要移動牌堆至 <strong>非空欄</strong> ，目前最多可移動 <strong>{{ maxLength.nonEmpty }}</strong> 張牌，其中 m = ( 空格數 +
+                <span>若要移動牌堆至 <strong>非空欄</strong> ，目前最多可移動 <strong>{{ maxLength.nonEmpty }}</strong> 張牌，其中 m = (
+                    空格數 +
                     1
                     )
                     X (
@@ -74,30 +92,12 @@
                     空欄數
                 </span>
                 <!-- <br>
-                <span>{{ record.position }}</span>
-                <br>
-                <span>target: {{ mouseArea.pack }}[{{ mouseArea.packIndex }}]</span> -->
+            <span>{{ record.position }}</span>
+            <br>
+            <span>target: {{ mouseArea.pack }}[{{ mouseArea.packIndex }}]</span> -->
             </p>
         </div>
-        <hr>
-        <div class="info">
-            <div class="stats">
-                <span class="info_space">
-                </span>
-                <span>TIME:</span>
-                <span id="time">{{ minute >= 10? minute : `0${minute}` }}:{{ second >= 10? second : `0${second}`
-                    }}</span>
-                <span>MOVES:</span>
-                <span id="moves">{{ moves }}</span>
-            </div>
-            <div class="functionButton">
-                <div id="newGame" @click="newGameHandler">NEW GAME</div>
-                <div id="restart" @click="restartHandler">RESTART</div>
-                <div id="hint" @click="hint">HINT</div>
-                <div id="undo" @click="undo">UNDO</div>
-            </div>
-        </div>
-        <transition name="fade">
+        <transition name="msg">
             <div class="msg" v-if="status.code !== 'inGame' && status.code !== 'init'">
                 <div class="msg_box">
                     <div class="close" @click="closeHandler">X</div>
@@ -111,10 +111,14 @@
                 </div>
             </div>
         </transition>
+        <transition name="loadingFrame">
+            <div class="loadingFrame" v-if="isLoading">
+                <div class="circle"><span>Loading...</span></div>
+            </div>
+        </transition>
     </div>
     <script src="https://unpkg.com/vue@next"></script>
     <script type="module" src="./index.js"></script>
-
 </body>
 
 </html>
