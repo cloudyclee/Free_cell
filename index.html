@@ -42,8 +42,8 @@
                         :style="item.styleObject"
                         :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]"
                         :data-type="item.type" :data-acceptCardType="item.acceptCardType" :data-suit="item.suit"
-                        @mousedown="dragStart($event)" @mousemove="drag($event)" @mouseup="dragEnd($event)"
-                        @mouseenter="hoverHint($event)" @mouseleave="hoverHint($event, false)">
+                        @mousedown="dragStart($event)" @mouseenter="hoverHint($event)"
+                        @mouseleave="hoverHint($event, false)">
                     </div>
                 </div>
             </div>
@@ -54,7 +54,7 @@
             </div>
             <div class="finalSpace">
                 <div v-for="(elem,index) in packs.final" :key="elem" :ref="setFinalRef" :id="`final${index+1}`"
-                    class="final" :class="[Object.values(suits)[index]]" @mouseenter="hoverHintForFinal($event)"
+                    class="final" :class="[suits[index]]" @mouseenter="hoverHintForFinal($event)"
                     @mouseleave="hoverHintForFinal($event, false)">
                     <div class="space_card"></div>
                     <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card"
@@ -71,8 +71,7 @@
                 <div v-for="item in elem" :key="item.card" :ref="setCardRef" :id="item.card" :style="item.styleObject"
                     :class="['card', {transition: isTransition, hoverHint: item.isHoverHint}]" :data-type="item.type"
                     :data-acceptCardType="item.acceptCardType" :data-suit="item.suit" @mousedown="dragStart($event)"
-                    @mousemove="drag($event)" @mouseup="dragEnd($event)" @mouseenter="hoverHint($event)"
-                    @mouseleave="hoverHint($event, false)">
+                    @mouseenter="hoverHint($event)" @mouseleave="hoverHint($event, false)">
                 </div>
             </div>
         </div>
@@ -111,11 +110,9 @@
                 </div>
             </div>
         </transition>
-        <transition name="loadingFrame">
-            <div class="loadingFrame" v-if="isLoading">
-                <div class="circle"><span>Loading...</span></div>
-            </div>
-        </transition>
+        <div class="loadingFrame" ref="loadingFrame">
+            <div class="circle"><span>Loading...</span></div>
+        </div>
     </div>
     <script src="https://unpkg.com/vue@next"></script>
     <script type="module" src="./index.js"></script>

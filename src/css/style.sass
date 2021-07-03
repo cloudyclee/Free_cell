@@ -50,7 +50,7 @@ html, body
     margin-right: 20px
     z-index: 10
     opacity: 0
-    transform: scale(1) translateY(0px) 
+    transform: scale(1) translateY(0px)
     &::before
         content: ""
         position: absolute
@@ -81,13 +81,13 @@ html, body
         transform: scale(1.02) translateY(-5px)
         &::after
             opacity: 0.3
-            
+
 .container
     width: 100%
-    background-color: #E2E2E2 
+    background-color: #E2E2E2
     background-repeat: no-repeat
     padding: 30px 0px
- 
+
 .top
     display: flex
     justify-content: center
@@ -100,11 +100,11 @@ html, body
         justify-content: space-between
         align-items: center
         .temp
-            +card 
+            +card
             border: 2px solid rgba($white, 0.6)
             background-color: transparent
             margin: 0px 7.5px
-            .space_card 
+            .space_card
                 outline: 1px solid transparent
                 width: 95px
                 height: 145px
@@ -136,19 +136,19 @@ html, body
                     outline: 1px solid rgba($yellow, 0.4)
                     width: 95px
                     height: 145px
-        .spade
+        .S
             background-image: url("../F2E_W2_material/material/S.png")
             background-size: 35px auto
             background-position: center center
-        .heart
+        .H
             background-image: url("../F2E_W2_material/material/H.png")
             background-size: 35px auto
             background-position: center center
-        .diamond
+        .D
             background-image: url("../F2E_W2_material/material/D.png")
             background-size: 35px auto
             background-position: center center
-        .club
+        .C
             background-image: url("../F2E_W2_material/material/C.png")
             background-size: 35px auto
             background-position: center center
@@ -194,7 +194,7 @@ html, body
         .card:nth-child(1)
             margin-top: 0px
         .card:nth-child(2)
-            margin-top: -147px
+            margin-top: -146.6px
             &.cardmove
                 margin-top: 0px
     .col:nth-child(8)
@@ -243,7 +243,7 @@ hr
                 height: auto
                 line-height: 40px
         span
-            vertical-align: middle  
+            vertical-align: middle
             font: normal normal 800 14px/17px Lato
             letter-spacing: 1.4px
             color: $black
@@ -350,7 +350,7 @@ hr
             transform: translate(-50%, -50%)
             background-color: $black
 
-.msg-enter-active, .msg-leave-active, .loadingFrame-enter-active, .loadingFrame-leave-active 
+.msg-enter-active, .msg-leave-active, .loadingFrame-enter-active, .loadingFrame-leave-active
     transition: 1s ease
 .msg-enter-from, .msg-leave-to, .loadingFrame-leave-to
     opacity: 0
@@ -359,6 +359,3 @@ hr
 
 .transition
     transition: all 0.2s
-
-
-        

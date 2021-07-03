@@ -187,25 +187,25 @@ html, body {
   height: 145px;
 }
 
-.top .finalSpace .spade {
+.top .finalSpace .S {
   background-image: url("../F2E_W2_material/material/S.png");
   background-size: 35px auto;
   background-position: center center;
 }
 
-.top .finalSpace .heart {
+.top .finalSpace .H {
   background-image: url("../F2E_W2_material/material/H.png");
   background-size: 35px auto;
   background-position: center center;
 }
 
-.top .finalSpace .diamond {
+.top .finalSpace .D {
   background-image: url("../F2E_W2_material/material/D.png");
   background-size: 35px auto;
   background-position: center center;
 }
 
-.top .finalSpace .club {
+.top .finalSpace .C {
   background-image: url("../F2E_W2_material/material/C.png");
   background-size: 35px auto;
   background-position: center center;
@@ -276,7 +276,7 @@ html, body {
 }
 
 .cardSpace .col .card:nth-child(2) {
-  margin-top: -147px;
+  margin-top: -146.6px;
 }
 
 .cardSpace .col .card:nth-child(2).cardmove {
