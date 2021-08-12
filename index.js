@@ -334,7 +334,7 @@ const app = {
 				mouseArea.packIndex = null;
 			}
 		};
-		//const getTop = ( id ) => document.getElementById( id ).getBoundingClientRect().top;
+
 		// used in dragEnd to delete card's tranform
 		const cardReturnBack = ( cardPack, offset = { offsetX: 0, offsetY: 0 } ) => {
 			const { offsetX, offsetY } = offset;
@@ -344,7 +344,6 @@ const app = {
 			const tl = cardPack.length;
 			const ml = indexes.length;
 			const isCardSpace = pack === "col" && tl !== ml;
-			console.log( isCardSpace );
 
 			isTransition.value = true;
 			isDragging.value = false;
@@ -358,9 +357,10 @@ const app = {
 					setTimeout( () => {
 						cardPack[ tl - ml + index ].styleObject.transform = `translate(0px, 0px)`;
 						delete cardPack[ tl - ml + index ].styleObject.transform;
+						document.getElementById( cardPack[ tl - ml + index ].card ).style.transform = "";
 					}, 50 );
 				} );
-			}
+			};
 		};
 		// used in dragEnd and undo to transfer card object in packs
 		const elementTransfer = ( targetPack, sourcePack, isUndo = false, autoReturn = false ) => {

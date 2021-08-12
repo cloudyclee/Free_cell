@@ -77,23 +77,19 @@
         </div>
         <div class="alert">
             <p>
-                <span>若要移動牌堆至 <strong>非空欄</strong> ，目前最多可移動 <strong>{{ maxLength.nonEmpty }}</strong> 張牌，其中 m = (
-                    空格數 +
-                    1
-                    )
-                    X (
-                    空欄數
-                    + 1 )
+                <span>若要移動牌堆至
+                    <strong>非空欄</strong>
+                    ，目前最多可移動
+                    <strong>{{ maxLength.nonEmpty }}</strong>
+                    張牌，其中 m = ( 空格數 + 1 ) X ( 空欄數 + 1 )
                 </span>
                 <br>
-                <span>若要移動牌堆至 <strong>空欄</strong> 時，目前最多可移動 <strong>{{ maxLength.empty }}</strong> 張牌，其中 n = ( 空格數 +
-                    1 ) X
-                    空欄數
+                <span>若要移動牌堆至
+                    <strong>空欄</strong>
+                    時，目前最多可移動
+                    <strong>{{ maxLength.empty }}</strong>
+                    張牌，其中 n = ( 空格數 + 1 ) X 空欄數
                 </span>
-                <!-- <br>
-            <span>{{ record.position }}</span>
-            <br>
-            <span>target: {{ mouseArea.pack }}[{{ mouseArea.packIndex }}]</span> -->
             </p>
         </div>
         <transition name="msg">
